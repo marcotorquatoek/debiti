@@ -9,38 +9,28 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:100px;max-width:430px;margin:0 auto}
 
-/* HEADER */
 .header{padding:56px 24px 8px;display:flex;justify-content:space-between;align-items:center}
 .header-left{font-size:17px;font-weight:400;color:#888;display:flex;align-items:center;gap:6px}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#3a3a3c;display:inline-block;transition:background .3s}
 .sync-dot.syncing{background:#ff9f0a}
 .sync-dot.ok{background:#30d158}
+.header-right{display:flex;align-items:center;gap:10px}
+.version-badge{font-size:11px;font-weight:600;color:#636366;background:#1c1c1e;border-radius:6px;padding:3px 7px;letter-spacing:.3px}
 .avatar-btn{width:34px;height:34px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;border:none}
 
-/* HERO */
-.hero{padding:8px 24px 24px}
+.hero{padding:8px 24px 28px}
 .hero-label{font-size:14px;color:#666;margin-bottom:4px}
-.hero-amount{font-size:48px;font-weight:300;letter-spacing:-2px;color:#fff;line-height:1;margin-bottom:16px}
-.hero-amount .euro{font-size:26px;font-weight:300;vertical-align:super;margin-right:3px}
+.hero-amount{font-size:52px;font-weight:300;letter-spacing:-2px;color:#fff;line-height:1}
+.hero-amount .euro{font-size:28px;font-weight:300;vertical-align:super;margin-right:3px}
 
-/* TOTALS ROW */
-.totals-row{display:flex;gap:12px}
-.total-card{flex:1;background:#1c1c1e;border-radius:14px;padding:14px 16px}
-.total-card-label{font-size:12px;color:#636366;margin-bottom:4px;font-weight:500}
-.total-card-amt{font-size:18px;font-weight:500;letter-spacing:-0.5px}
-.total-card-amt.receive{color:#30d158}
-.total-card-amt.give{color:#ff453a}
-
-/* SECTION */
-.section-title{display:flex;justify-content:space-between;align-items:center;padding:28px 24px 14px}
+.section-title{display:flex;justify-content:space-between;align-items:center;padding:0 24px 14px}
 .section-title h2{font-size:17px;font-weight:600}
 
-/* PERSON ROW */
 .person-row{display:flex;align-items:center;gap:14px;padding:14px 24px;cursor:pointer}
 .person-row:active{background:#0a0a0a}
 .person-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#000;flex-shrink:0}
 .person-info{flex:1;min-width:0}
-.person-name-row{font-size:16px;font-weight:500;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.person-name-row{font-size:16px;font-weight:500;margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .person-badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:.3px}
 .badge-give{background:rgba(255,69,58,.15);color:#ff453a}
 .badge-receive{background:rgba(48,209,88,.15);color:#30d158}
@@ -52,17 +42,20 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 .chevron-r{color:#3a3a3c;font-size:16px}
 .divider{height:1px;background:#1c1c1e;margin:0 24px 0 82px}
 
-/* FAB */
 .add-fab{position:fixed;bottom:28px;right:24px;width:56px;height:56px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;color:#000;border:none;cursor:pointer;box-shadow:0 4px 24px rgba(255,255,255,.15);z-index:100;line-height:1}
 .add-fab:active{transform:scale(.93)}
 
 /* PANEL */
 .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;backdrop-filter:blur(4px)}
 .panel-overlay.open{display:block}
-.panel{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1c1c1e;border-radius:24px 24px 0 0;z-index:201;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,0,.67,0);max-height:92vh;overflow-y:auto}
+.panel{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1c1c1e;border-radius:24px 24px 0 0;z-index:201;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,0,.67,0);max-height:92vh;display:flex;flex-direction:column}
 .panel.open{transform:translateY(0)}
-.panel-handle{width:36px;height:4px;background:#3a3a3c;border-radius:2px;margin:12px auto 0}
-.panel-header{padding:18px 24px 16px;border-bottom:1px solid #2c2c2e;display:flex;align-items:center;gap:12px}
+.panel-scroll{overflow-y:auto;flex:1}
+
+.panel-handle-area{padding:12px 0 4px;cursor:grab;touch-action:none;user-select:none;flex-shrink:0}
+.panel-handle{width:36px;height:4px;background:#3a3a3c;border-radius:2px;margin:0 auto}
+
+.panel-header{padding:14px 24px 16px;border-bottom:1px solid #2c2c2e;display:flex;align-items:center;gap:12px;flex-shrink:0}
 .panel-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0}
 .panel-title{flex:1}
 .panel-name{font-size:19px;font-weight:600}
@@ -75,15 +68,11 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 .panel-net.give{color:#ff453a}
 .close-btn{background:#2c2c2e;border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* DIRECTION TOGGLE */
-.dir-toggle{display:flex;gap:8px;padding:14px 24px;border-bottom:1px solid #2c2c2e}
-.dir-btn{flex:1;padding:10px;border-radius:10px;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
-.dir-btn.give-btn{background:#2c2c2e;color:#636366}
-.dir-btn.give-btn.active{background:rgba(255,69,58,.2);color:#ff453a}
-.dir-btn.receive-btn{background:#2c2c2e;color:#636366}
-.dir-btn.receive-btn.active{background:rgba(48,209,88,.2);color:#30d158}
+.dir-select-row{display:flex;gap:8px;margin-bottom:8px}
+.dir-mini-btn{flex:1;padding:9px;border-radius:9px;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:#1c1c1e;color:#636366;transition:all .15s}
+.dir-mini-btn.active-give{background:rgba(255,69,58,.2);color:#ff453a}
+.dir-mini-btn.active-receive{background:rgba(48,209,88,.2);color:#30d158}
 
-/* DEBT ROWS */
 .debt-row{display:flex;align-items:center;gap:12px;padding:13px 24px;border-bottom:1px solid #2c2c2e}
 .debt-check{width:22px;height:22px;border-radius:50%;border:2px solid #3a3a3c;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:#000}
 .debt-check.done{background:#30d158;border-color:#30d158}
@@ -98,21 +87,15 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 .del-x{background:transparent;border:none;color:#3a3a3c;font-size:16px;cursor:pointer;padding:4px}
 .del-x:active{color:#ff453a}
 
-/* ADD FORM */
 .panel-add{padding:16px 24px;background:#2c2c2e;border-top:1px solid #3a3a3c}
 .panel-add-row{display:flex;gap:8px;margin-bottom:8px}
 .panel-input{background:#1c1c1e;border:none;border-radius:10px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;flex:1}
 .panel-input::placeholder{color:#48484a}
 .panel-input:focus{background:#111}
 .amt-small{max-width:85px}
-.dir-select-row{display:flex;gap:8px;margin-bottom:8px}
-.dir-mini-btn{flex:1;padding:9px;border-radius:9px;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:#1c1c1e;color:#636366;transition:all .15s}
-.dir-mini-btn.active-give{background:rgba(255,69,58,.2);color:#ff453a}
-.dir-mini-btn.active-receive{background:rgba(48,209,88,.2);color:#30d158}
 .panel-add-btn{background:#fff;color:#000;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:11px 0;width:100%;cursor:pointer}
 .panel-add-btn:active{opacity:.8}
 
-/* DEDUCTIONS */
 .ded-toggle{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;cursor:pointer;border-top:1px solid #2c2c2e}
 .ded-toggle-label{font-size:13px;color:#636366;font-weight:500;text-transform:uppercase;letter-spacing:.6px}
 .ded-toggle-amt{font-size:13px;color:#30d158}
@@ -120,24 +103,18 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 .ded-name{flex:1;font-size:14px;color:#8e8e93}
 .ded-amt{font-size:13px;color:#30d158}
 .ded-add-row{display:flex;gap:8px;padding:10px 24px 4px}
+
 .panel-summary{padding:14px 24px;display:flex;justify-content:space-between;font-size:12px;color:#636366;border-top:1px solid #2c2c2e;flex-wrap:wrap;gap:4px}
 .panel-summary strong{color:#fff}
-
-/* DELETE PERSON */
-.del-person-row{padding:12px 24px;border-top:1px solid #2c2c2e;text-align:center}
+.del-person-row{padding:12px 24px 24px;text-align:center;border-top:1px solid #2c2c2e}
 .del-person-btn{background:transparent;border:none;color:#ff453a;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;padding:6px 0}
 
-/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;backdrop-filter:blur(4px);align-items:flex-end}
 .modal-overlay.open{display:flex}
 .modal{background:#1c1c1e;border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;padding:24px 24px 40px}
 .modal h3{font-size:18px;font-weight:600;margin-bottom:20px}
 .modal-input{background:#2c2c2e;border:none;border-radius:12px;color:#fff;font-family:'Inter',sans-serif;font-size:16px;padding:14px 16px;outline:none;width:100%;margin-bottom:12px}
 .modal-input::placeholder{color:#48484a}
-.modal-dir-row{display:flex;gap:10px;margin-bottom:16px}
-.modal-dir-btn{flex:1;padding:12px;border-radius:12px;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:#2c2c2e;color:#636366;transition:all .15s}
-.modal-dir-btn.active-give{background:rgba(255,69,58,.2);color:#ff453a}
-.modal-dir-btn.active-receive{background:rgba(48,209,88,.2);color:#30d158}
 .modal-btn{background:#fff;color:#000;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;padding:14px;width:100%;cursor:pointer;margin-bottom:10px}
 .modal-btn:active{opacity:.8}
 .modal-cancel{background:transparent;border:none;color:#636366;font-family:'Inter',sans-serif;font-size:16px;padding:10px;width:100%;cursor:pointer}
@@ -149,23 +126,18 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 <body>
 
 <div class="header">
-  <div class="header-left">Debiti <span class="sync-dot" id="sync-dot"></span></div>
-  <div class="avatar-btn">M</div>
+  <div class="header-left">
+    Saldo <span class="sync-dot" id="sync-dot"></span>
+  </div>
+  <div class="header-right">
+    <span class="version-badge">v1</span>
+    <div class="avatar-btn">M</div>
+  </div>
 </div>
 
 <div class="hero">
-  <div class="hero-label">Saldo netto</div>
+  <div class="hero-label">Mi devono dare</div>
   <div class="hero-amount"><span class="euro">€</span><span id="hero-num">0,00</span></div>
-  <div class="totals-row">
-    <div class="total-card">
-      <div class="total-card-label">Mi devono dare</div>
-      <div class="total-card-amt receive" id="total-receive">0,00€</div>
-    </div>
-    <div class="total-card">
-      <div class="total-card-label">Devo dare</div>
-      <div class="total-card-amt give" id="total-give">0,00€</div>
-    </div>
-  </div>
 </div>
 
 <div class="section-title">
@@ -174,10 +146,12 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 
 <div id="list"><div class="loading">Connessione...</div></div>
 
-<!-- DETAIL PANEL -->
+<!-- PANEL -->
 <div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
 <div class="panel" id="panel">
-  <div class="panel-handle"></div>
+  <div class="panel-handle-area" id="panel-handle-area">
+    <div class="panel-handle"></div>
+  </div>
   <div class="panel-header">
     <div class="panel-avatar" id="panel-avatar"></div>
     <div class="panel-title">
@@ -187,46 +161,43 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
     <div class="panel-net" id="panel-net"></div>
     <button class="close-btn" onclick="closePanel()">✕</button>
   </div>
-
-  <div id="panel-debts"></div>
-
-  <div class="panel-add">
-    <div class="dir-select-row">
-      <button class="dir-mini-btn" id="add-dir-give" onclick="setAddDir('give')">↑ Devo dare</button>
-      <button class="dir-mini-btn" id="add-dir-receive" onclick="setAddDir('receive')">↓ Mi devono</button>
+  <div class="panel-scroll">
+    <div id="panel-debts"></div>
+    <div class="panel-add">
+      <div class="dir-select-row">
+        <button class="dir-mini-btn" id="add-dir-give" onclick="setAddDir('give')">↑ Devo dare</button>
+        <button class="dir-mini-btn" id="add-dir-receive" onclick="setAddDir('receive')">↓ Mi devono</button>
+      </div>
+      <div class="panel-add-row">
+        <input class="panel-input" id="new-desc" placeholder="Descrizione..." onkeydown="if(event.key==='Enter')addDebt()">
+        <input class="panel-input amt-small" id="new-amt" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDebt()">
+      </div>
+      <button class="panel-add-btn" onclick="addDebt()">Aggiungi voce</button>
     </div>
-    <div class="panel-add-row">
-      <input class="panel-input" id="new-desc" placeholder="Descrizione..." onkeydown="if(event.key==='Enter')addDebt()">
-      <input class="panel-input amt-small" id="new-amt" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDebt()">
+    <div class="ded-toggle" onclick="toggleDed()">
+      <span class="ded-toggle-label">Da sottrarre</span>
+      <span class="ded-toggle-amt" id="ded-total-label">−0,00€</span>
     </div>
-    <button class="panel-add-btn" onclick="addDebt()">Aggiungi voce</button>
-  </div>
-
-  <div class="ded-toggle" onclick="toggleDed()">
-    <span class="ded-toggle-label">Da sottrarre</span>
-    <span class="ded-toggle-amt" id="ded-total-label">−0,00€</span>
-  </div>
-  <div id="ded-section" style="display:none">
-    <div id="ded-list"></div>
-    <div class="ded-add-row">
-      <input class="panel-input" id="new-dl" placeholder="Es. Skipass, pranzo..." onkeydown="if(event.key==='Enter')addDed()">
-      <input class="panel-input amt-small" id="new-da" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDed()">
-      <button class="panel-add-btn" style="width:auto;padding:11px 16px" onclick="addDed()">+</button>
+    <div id="ded-section" style="display:none">
+      <div id="ded-list"></div>
+      <div class="ded-add-row">
+        <input class="panel-input" id="new-dl" placeholder="Es. Skipass, pranzo..." onkeydown="if(event.key==='Enter')addDed()">
+        <input class="panel-input amt-small" id="new-da" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDed()">
+        <button class="panel-add-btn" style="width:auto;padding:11px 16px" onclick="addDed()">+</button>
+      </div>
     </div>
-  </div>
-
-  <div class="panel-summary">
-    <span>Mi devono: <strong id="sum-receive" style="color:#30d158"></strong></span>
-    <span>Devo: <strong id="sum-give" style="color:#ff453a"></strong></span>
-    <span>Netto: <strong id="sum-net"></strong></span>
-  </div>
-
-  <div class="del-person-row">
-    <button class="del-person-btn" id="del-person-btn">Elimina persona</button>
+    <div class="panel-summary">
+      <span>Mi devono: <strong id="sum-receive" style="color:#30d158"></strong></span>
+      <span>Devo: <strong id="sum-give" style="color:#ff453a"></strong></span>
+      <span>Netto: <strong id="sum-net"></strong></span>
+    </div>
+    <div class="del-person-row">
+      <button class="del-person-btn" id="del-person-btn">Elimina persona</button>
+    </div>
   </div>
 </div>
 
-<!-- ADD PERSON MODAL -->
+<!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <h3>Nuova persona</h3>
@@ -259,8 +230,44 @@ const dbRef = ref(db, "debiti");
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
 let D = { persons: [] };
 let activePi = -1;
-let addDir = "receive"; // default: mi devono dare
+let addDir = "receive";
 
+// --- SWIPE DOWN TO CLOSE PANEL ---
+const panel = document.getElementById("panel");
+const handleArea = document.getElementById("panel-handle-area");
+let dragStartY = 0, dragCurrentY = 0, isDragging = false;
+
+function onDragStart(e){
+  isDragging = true;
+  dragStartY = e.touches ? e.touches[0].clientY : e.clientY;
+  panel.style.transition = "none";
+}
+function onDragMove(e){
+  if(!isDragging) return;
+  dragCurrentY = (e.touches ? e.touches[0].clientY : e.clientY) - dragStartY;
+  if(dragCurrentY < 0) dragCurrentY = 0;
+  panel.style.transform = `translateY(${dragCurrentY}px)`;
+}
+function onDragEnd(){
+  if(!isDragging) return;
+  isDragging = false;
+  panel.style.transition = "transform .35s cubic-bezier(.32,0,.67,0)";
+  if(dragCurrentY > 100){
+    closePanel();
+  } else {
+    panel.style.transform = "translateY(0)";
+  }
+  dragCurrentY = 0;
+}
+
+handleArea.addEventListener("touchstart", onDragStart, {passive:true});
+handleArea.addEventListener("touchmove", onDragMove, {passive:true});
+handleArea.addEventListener("touchend", onDragEnd);
+handleArea.addEventListener("mousedown", onDragStart);
+window.addEventListener("mousemove", onDragMove);
+window.addEventListener("mouseup", onDragEnd);
+
+// --- SYNC ---
 const syncDot = document.getElementById("sync-dot");
 function setSyncing(){ syncDot.className="sync-dot syncing"; }
 function setSynced(){ syncDot.className="sync-dot ok"; }
@@ -274,14 +281,12 @@ function saveAll(){
   set(dbRef, D).then(setSynced).catch(()=>setSynced());
 }
 
-// receive = mi devono dare (positivo per me)
-// give    = devo dare (negativo per me)
 function calcPerson(p){
   const debts = p.debts || [];
   const receive = debts.filter(d=>!d.paid && d.dir==="receive").reduce((s,d)=>s+d.amount,0);
   const give    = debts.filter(d=>!d.paid && d.dir==="give").reduce((s,d)=>s+d.amount,0);
   const ded     = (p.deductions||[]).reduce((s,d)=>s+d.amount,0);
-  const net     = receive - give - ded; // positive = they owe me, negative = I owe them
+  const net     = receive - give - ded;
   return { receive, give, ded, net };
 }
 
@@ -298,37 +303,31 @@ function renderList(){
   if(!D.persons.length){
     list.innerHTML='<div class="empty-msg">Nessuna persona ancora.<br>Tocca <strong>+</strong> per aggiungerne una.</div>';
     document.getElementById("hero-num").textContent="0,00";
-    document.getElementById("total-receive").textContent="0,00€";
-    document.getElementById("total-give").textContent="0,00€";
     return;
   }
-  let totalReceive=0, totalGive=0;
+  let totalNet = 0;
   list.innerHTML = D.persons.map((p,pi)=>{
-    const {receive,give,ded,net} = calcPerson(p);
-    if(net>0) totalReceive+=net; else totalGive+=Math.abs(net);
+    const {net} = calcPerson(p);
+    totalNet += net;
     const init = p.name.slice(0,2).toUpperCase();
     const unpaid = (p.debts||[]).filter(d=>!d.paid).length;
+    const voci = unpaid === 1 ? "1 voce aperta" : `${unpaid} voci aperte`;
     const amtClass = net===0?"zero":net>0?"receive":"give";
-    const badge = net===0?"":net>0
-      ?'<span class="person-badge badge-receive">deve a me</span>'
-      :'<span class="person-badge badge-give">gli devo</span>';
-    const sign = net>0?"+":"";
+    const badge = net===0 ? "" : net>0
+      ? '<span class="person-badge badge-receive">deve a me</span>'
+      : '<span class="person-badge badge-give">gli devo</span>';
     return `<div class="person-row" onclick="window._openPanel(${pi})">
       <div class="person-avatar" style="background:${p.color}">${init}</div>
       <div class="person-info">
         <div class="person-name-row">${esc(p.name)} ${badge}</div>
-        <div class="person-sub">${unpaid} voc${unpaid===1?"e":"i"} aperta${unpaid===1?"":"e"}</div>
+        <div class="person-sub">${voci}</div>
       </div>
-      <div class="person-amount ${amtClass}">${sign}${fmt(Math.abs(net))}</div>
+      <div class="person-amount ${amtClass}">${fmt(Math.abs(net))}</div>
       <span class="chevron-r">›</span>
     </div><div class="divider"></div>`;
   }).join("");
 
-  // Update global totals
-  const saldo = totalReceive - totalGive;
-  document.getElementById("hero-num").textContent = fmtN(Math.abs(saldo));
-  document.getElementById("total-receive").textContent = fmt(totalReceive);
-  document.getElementById("total-give").textContent = fmt(totalGive);
+  document.getElementById("hero-num").textContent = fmtN(Math.abs(totalNet));
 }
 
 function openPanel(pi){
@@ -336,7 +335,8 @@ function openPanel(pi){
   addDir = "receive";
   renderPanel();
   document.getElementById("panel-overlay").classList.add("open");
-  document.getElementById("panel").classList.add("open");
+  panel.classList.add("open");
+  panel.style.transform = "";
   document.getElementById("del-person-btn").onclick = () => {
     if(confirm("Eliminare "+D.persons[pi].name+"?")) {
       D.persons.splice(pi,1); saveAll(); closePanel();
@@ -348,7 +348,8 @@ window._openPanel = openPanel;
 
 function closePanel(){
   document.getElementById("panel-overlay").classList.remove("open");
-  document.getElementById("panel").classList.remove("open");
+  panel.classList.remove("open");
+  panel.style.transform = "";
   activePi = -1;
 }
 window.closePanel = closePanel;
@@ -375,16 +376,14 @@ function renderPanel(){
   else { dirEl.textContent="Pari"; dirEl.className="panel-direction"; }
 
   const ne = document.getElementById("panel-net");
-  const netClass = net===0?"zero":net>0?"receive":"give";
-  ne.textContent = (net>0?"+":net<0?"-":"")+fmt(Math.abs(net));
-  ne.className = "panel-net "+netClass;
+  ne.textContent = fmt(Math.abs(net));
+  ne.className = "panel-net "+(net===0?"zero":net>0?"receive":"give");
 
   document.getElementById("sum-receive").textContent = fmt(receive);
   document.getElementById("sum-give").textContent = fmt(give);
-  document.getElementById("sum-net").textContent = (net>=0?"+":"")+fmt(net);
+  document.getElementById("sum-net").textContent = fmt(net);
   document.getElementById("ded-total-label").textContent = "−"+fmt(ded);
 
-  // Update dir buttons
   setAddDir(addDir);
 
   const debts = p.debts || [];
@@ -428,13 +427,11 @@ window._delDed = function(di){
   D.persons[activePi].deductions.splice(di,1);
   saveAll(); renderPanel(); renderList();
 };
-
 window.toggleDed = function(){
   if(activePi<0) return;
   D.persons[activePi].showDed = !D.persons[activePi].showDed;
   saveAll(); renderPanel();
 };
-
 window.addDebt = function(){
   if(activePi<0) return;
   const desc = document.getElementById("new-desc").value.trim();
@@ -447,7 +444,6 @@ window.addDebt = function(){
   saveAll(); renderPanel(); renderList();
   document.getElementById("new-desc").focus();
 };
-
 window.addDed = function(){
   if(activePi<0) return;
   const label = document.getElementById("new-dl").value.trim();
@@ -459,7 +455,6 @@ window.addDed = function(){
   document.getElementById("new-da").value="";
   saveAll(); renderPanel(); renderList();
 };
-
 window.openAddPerson = function(){
   document.getElementById("modal-overlay").classList.add("open");
   setTimeout(()=>document.getElementById("modal-name").focus(),150);
@@ -475,7 +470,6 @@ window.confirmAddPerson = function(){
   saveAll(); renderList(); closeModal();
   setTimeout(()=>openPanel(D.persons.length-1),150);
 };
-
 document.getElementById("modal-overlay").addEventListener("click",function(e){
   if(e.target===this) window.closeModal();
 });
