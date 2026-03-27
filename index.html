@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debiti</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:80px;max-width:430px;margin:0 auto}
+.header{padding:56px 24px 8px;display:flex;justify-content:space-between;align-items:center}
+.header-left{font-size:17px;font-weight:400;color:#888}
+.avatar-btn{width:34px;height:34px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;border:none;cursor:pointer}
+.hero{padding:8px 24px 28px}
+.hero-label{font-size:14px;color:#666;margin-bottom:4px}
+.hero-amount{font-size:52px;font-weight:300;letter-spacing:-2px;color:#fff;line-height:1}
+.hero-amount .euro{font-size:28px;font-weight:300;vertical-align:super;margin-right:4px}
+.quick-actions{display:flex;gap:12px;padding:0 24px 32px;overflow-x:auto;scrollbar-width:none}
+.quick-actions::-webkit-scrollbar{display:none}
+.qa-btn{background:#1c1c1e;border:none;border-radius:16px;padding:16px;min-width:110px;display:flex;flex-direction:column;gap:10px;cursor:pointer;flex-shrink:0}
+.qa-btn:active{opacity:.7}
+.qa-icon{width:30px;height:30px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px}
+.qa-label{font-size:13px;font-weight:500;color:#fff;text-align:left}
+.section-title{display:flex;justify-content:space-between;align-items:center;padding:0 24px 16px}
+.section-title h2{font-size:17px;font-weight:600}
+.section-title a{font-size:14px;color:#888;text-decoration:none;cursor:pointer}
+.add-fab{position:fixed;bottom:28px;right:24px;width:52px;height:52px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#000;border:none;cursor:pointer;box-shadow:0 4px 24px rgba(255,255,255,.15);z-index:100;line-height:1}
+.add-fab:active{transform:scale(.93)}
+.person-row{display:flex;align-items:center;gap:14px;padding:14px 24px;cursor:pointer}
+.person-row:active{background:#0a0a0a}
+.person-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#000;flex-shrink:0}
+.person-info{flex:1;min-width:0}
+.person-name{font-size:16px;font-weight:500;margin-bottom:2px}
+.person-sub{font-size:13px;color:#666}
+.person-amount{font-size:16px;font-weight:500;color:#ff453a}
+.person-amount.zero{color:#30d158}
+.chevron-r{color:#3a3a3c;font-size:16px}
+.divider{height:1px;background:#1c1c1e;margin:0 24px 0 82px}
+.panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;backdrop-filter:blur(4px)}
+.panel-overlay.open{display:block}
+.panel{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1c1c1e;border-radius:24px 24px 0 0;z-index:201;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,0,.67,0);max-height:90vh;overflow-y:auto}
+.panel.open{transform:translateY(0)}
+.panel-handle{width:36px;height:4px;background:#3a3a3c;border-radius:2px;margin:12px auto 0}
+.panel-header{padding:20px 24px 16px;border-bottom:1px solid #2c2c2e;display:flex;align-items:center;gap:12px}
+.panel-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0}
+.panel-name{font-size:20px;font-weight:600;flex:1}
+.panel-net{font-size:22px;font-weight:300;letter-spacing:-0.5px}
+.panel-net.zero{color:#30d158}
+.panel-net.due{color:#ff453a}
+.close-btn{background:#2c2c2e;border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.debt-row{display:flex;align-items:center;gap:12px;padding:13px 24px;border-bottom:1px solid #2c2c2e}
+.debt-check{width:22px;height:22px;border-radius:50%;border:2px solid #3a3a3c;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:#000}
+.debt-check.done{background:#30d158;border-color:#30d158}
+.debt-text{flex:1}
+.debt-desc{font-size:15px;color:#fff}
+.debt-amt-s{font-size:13px;color:#8e8e93;margin-top:1px;font-variant-numeric:tabular-nums}
+.debt-row.paid-row .debt-desc{color:#3a3a3c}
+.debt-row.paid-row .debt-amt-s{color:#2a2a2a}
+.del-x{background:transparent;border:none;color:#3a3a3c;font-size:16px;cursor:pointer;padding:4px}
+.del-x:active{color:#ff453a}
+.panel-add{padding:16px 24px;background:#2c2c2e;border-top:1px solid #3a3a3c}
+.panel-add-row{display:flex;gap:8px;margin-bottom:8px}
+.panel-input{background:#1c1c1e;border:none;border-radius:10px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;flex:1}
+.panel-input::placeholder{color:#48484a}
+.panel-input:focus{background:#111}
+.amt-small{max-width:85px}
+.panel-add-btn{background:#fff;color:#000;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:11px 0;width:100%;cursor:pointer}
+.panel-add-btn:active{opacity:.8}
+.ded-toggle{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;cursor:pointer;border-top:1px solid #2c2c2e}
+.ded-toggle-label{font-size:13px;color:#636366;font-weight:500;text-transform:uppercase;letter-spacing:.6px}
+.ded-toggle-amt{font-size:13px;color:#30d158;font-variant-numeric:tabular-nums}
+.ded-row{display:flex;align-items:center;gap:10px;padding:10px 24px;border-bottom:1px solid #2c2c2e}
+.ded-name{flex:1;font-size:14px;color:#8e8e93}
+.ded-amt{font-size:13px;color:#30d158;font-variant-numeric:tabular-nums}
+.ded-add-row{display:flex;gap:8px;padding:10px 24px 4px}
+.panel-summary{padding:14px 24px;display:flex;justify-content:space-between;font-size:12px;color:#636366;border-top:1px solid #2c2c2e}
+.panel-summary strong{color:#fff}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;backdrop-filter:blur(4px);align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:#1c1c1e;border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;padding:24px 24px 40px}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:20px}
+.modal-input{background:#2c2c2e;border:none;border-radius:12px;color:#fff;font-family:'Inter',sans-serif;font-size:16px;padding:14px 16px;outline:none;width:100%;margin-bottom:12px}
+.modal-input::placeholder{color:#48484a}
+.modal-btn{background:#fff;color:#000;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;padding:14px;width:100%;cursor:pointer;margin-bottom:10px}
+.modal-btn:active{opacity:.8}
+.modal-cancel{background:transparent;border:none;color:#636366;font-family:'Inter',sans-serif;font-size:16px;padding:10px;width:100%;cursor:pointer}
+.del-person-btn{background:transparent;border:none;color:#ff453a;font-size:12px;font-family:'Inter',sans-serif;padding:0;cursor:pointer;margin-left:auto}
+.empty-msg{padding:40px 24px;text-align:center;color:#3a3a3c;font-size:15px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">Debiti</div>
+  <div class="avatar-btn">M</div>
+</div>
+
+<div class="hero">
+  <div class="hero-label">Totale dovuto</div>
+  <div class="hero-amount"><span class="euro">€</span><span id="hero-num">0,00</span></div>
+</div>
+
+<div class="quick-actions">
+  <button class="qa-btn" onclick="openAddPerson()">
+    <div class="qa-icon">➕</div>
+    <div class="qa-label">Nuova persona</div>
+  </button>
+  <button class="qa-btn" onclick="openAddPerson()">
+    <div class="qa-icon">👤</div>
+    <div class="qa-label">Aggiungi</div>
+  </button>
+</div>
+
+<div class="section-title">
+  <h2>Persone</h2>
+  <a onclick="openAddPerson()">+ Aggiungi</a>
+</div>
+
+<div id="list"></div>
+
+<!-- DETAIL PANEL -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-handle"></div>
+  <div class="panel-header">
+    <div class="panel-avatar" id="panel-avatar"></div>
+    <div style="flex:1">
+      <div class="panel-name" id="panel-name"></div>
+      <button class="del-person-btn" id="del-person-btn">Elimina persona</button>
+    </div>
+    <div class="panel-net" id="panel-net"></div>
+    <button class="close-btn" onclick="closePanel()">✕</button>
+  </div>
+  <div id="panel-debts"></div>
+  <div class="panel-add">
+    <div class="panel-add-row">
+      <input class="panel-input" id="new-desc" placeholder="Descrizione..." onkeydown="if(event.key==='Enter')addDebt()">
+      <input class="panel-input amt-small" id="new-amt" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDebt()">
+    </div>
+    <button class="panel-add-btn" onclick="addDebt()">Aggiungi voce</button>
+  </div>
+  <div class="ded-toggle" onclick="toggleDed()">
+    <span class="ded-toggle-label">Da sottrarre</span>
+    <span class="ded-toggle-amt" id="ded-total-label">−0,00€</span>
+  </div>
+  <div id="ded-section" style="display:none">
+    <div id="ded-list"></div>
+    <div class="ded-add-row">
+      <input class="panel-input" id="new-dl" placeholder="Es. Skipass, pranzo..." onkeydown="if(event.key==='Enter')addDed()">
+      <input class="panel-input amt-small" id="new-da" type="number" placeholder="€" step="0.01" min="0" onkeydown="if(event.key==='Enter')addDed()">
+      <button class="panel-add-btn" style="width:auto;padding:11px 16px" onclick="addDed()">+</button>
+    </div>
+  </div>
+  <div class="panel-summary">
+    <span>Lordo: <strong id="sum-gross"></strong></span>
+    <span>Sconti: <strong style="color:#30d158" id="sum-ded"></strong></span>
+    <span>Dovuto: <strong id="sum-net"></strong></span>
+  </div>
+</div>
+
+<!-- ADD PERSON MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Nuova persona</h3>
+    <input class="modal-input" id="modal-name" placeholder="Nome..." maxlength="40" onkeydown="if(event.key==='Enter')confirmAddPerson()">
+    <button class="modal-btn" onclick="confirmAddPerson()">Aggiungi</button>
+    <button class="modal-cancel" onclick="closeModal()">Annulla</button>
+  </div>
+</div>
+
+<button class="add-fab" onclick="openAddPerson()">+</button>
+
+<script>
+const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
+let D=load(), activePi=-1;
+
+function load(){try{const r=localStorage.getItem("deb5");if(r)return JSON.parse(r);}catch{}return{persons:[]};}
+function save(){try{localStorage.setItem("deb5",JSON.stringify(D));}catch{}}
+function fmt(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2})+"€";}
+function fmtN(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function calcNet(p){
+  const g=p.debts.reduce((s,d)=>s+(d.paid?0:d.amount),0);
+  const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);
+  return{g,ded,net:Math.max(0,g-ded)};
+}
+
+function renderList(){
+  const list=document.getElementById("list");
+  if(!D.persons.length){
+    list.innerHTML='<div class="empty-msg">Nessuna persona ancora.<br>Tocca <strong>+</strong> per aggiungerne una.</div>';
+    document.getElementById("hero-num").textContent="0,00";return;
+  }
+  let total=0;
+  list.innerHTML=D.persons.map((p,pi)=>{
+    const{net}=calcNet(p); total+=net;
+    const init=p.name.slice(0,2).toUpperCase();
+    const unpaid=p.debts.filter(d=>!d.paid).length;
+    return`<div class="person-row" onclick="openPanel(${pi})">
+      <div class="person-avatar" style="background:${p.color}">${init}</div>
+      <div class="person-info">
+        <div class="person-name">${esc(p.name)}</div>
+        <div class="person-sub">${unpaid} voc${unpaid===1?"e":"i"} aperta${unpaid===1?"":"e"}</div>
+      </div>
+      <div class="person-amount${net===0?" zero":""}">${fmt(net)}</div>
+      <span class="chevron-r">›</span>
+    </div><div class="divider"></div>`;
+  }).join("");
+  document.getElementById("hero-num").textContent=fmtN(total);
+}
+
+function openPanel(pi){
+  activePi=pi;
+  renderPanel();
+  document.getElementById("panel-overlay").classList.add("open");
+  document.getElementById("panel").classList.add("open");
+  document.getElementById("del-person-btn").onclick=()=>{
+    if(confirm("Eliminare "+D.persons[pi].name+"?"))
+    {D.persons.splice(pi,1);save();renderList();closePanel();}
+  };
+  setTimeout(()=>document.getElementById("new-desc").focus(),400);
+}
+
+function closePanel(){
+  document.getElementById("panel-overlay").classList.remove("open");
+  document.getElementById("panel").classList.remove("open");
+  activePi=-1;
+}
+
+function renderPanel(){
+  if(activePi<0)return;
+  const p=D.persons[activePi];
+  const{g,ded,net}=calcNet(p);
+  document.getElementById("panel-avatar").style.background=p.color;
+  document.getElementById("panel-avatar").textContent=p.name.slice(0,2).toUpperCase();
+  document.getElementById("panel-name").textContent=p.name;
+  const ne=document.getElementById("panel-net");
+  ne.textContent=fmt(net); ne.className="panel-net "+(net===0?"zero":"due");
+  document.getElementById("sum-gross").textContent=fmt(g+ded);
+  document.getElementById("sum-ded").textContent="−"+fmt(ded);
+  document.getElementById("sum-net").textContent=fmt(net);
+  document.getElementById("ded-total-label").textContent="−"+fmt(ded);
+
+  const dl=document.getElementById("panel-debts");
+  dl.innerHTML=!p.debts.length
+    ?'<div style="padding:16px 24px;font-size:14px;color:#3a3a3c">Nessuna voce ancora.</div>'
+    :p.debts.map((d,di)=>`
+      <div class="debt-row${d.paid?" paid-row":""}">
+        <div class="debt-check${d.paid?" done":""}" onclick="togglePaid(${di})">${d.paid?"✓":""}</div>
+        <div class="debt-text">
+          <div class="debt-desc">${esc(d.desc)}</div>
+          <div class="debt-amt-s">${fmt(d.amount)}</div>
+        </div>
+        <button class="del-x" onclick="delDebt(${di})">✕</button>
+      </div>`).join("");
+
+  document.getElementById("ded-list").innerHTML=!(p.deductions||[]).length?""
+    :p.deductions.map((d,di)=>`
+      <div class="ded-row">
+        <div class="ded-name">${esc(d.label)}</div>
+        <div class="ded-amt">−${fmt(d.amount)}</div>
+        <button class="del-x" onclick="delDed(${di})">✕</button>
+      </div>`).join("");
+
+  document.getElementById("ded-section").style.display=p.showDed?"block":"none";
+}
+
+function toggleDed(){if(activePi<0)return;D.persons[activePi].showDed=!D.persons[activePi].showDed;save();renderPanel();}
+
+function addDebt(){
+  if(activePi<0)return;
+  const desc=document.getElementById("new-desc").value.trim();
+  const amt=parseFloat(document.getElementById("new-amt").value);
+  if(!desc||isNaN(amt)||amt<=0)return;
+  D.persons[activePi].debts.push({desc,amount:amt,paid:false});
+  document.getElementById("new-desc").value="";
+  document.getElementById("new-amt").value="";
+  save();renderPanel();renderList();
+  document.getElementById("new-desc").focus();
+}
+
+function delDebt(di){D.persons[activePi].debts.splice(di,1);save();renderPanel();renderList();}
+function togglePaid(di){D.persons[activePi].debts[di].paid=!D.persons[activePi].debts[di].paid;save();renderPanel();renderList();}
+
+function addDed(){
+  if(activePi<0)return;
+  const label=document.getElementById("new-dl").value.trim();
+  const amt=parseFloat(document.getElementById("new-da").value);
+  if(!label||isNaN(amt)||amt<=0)return;
+  if(!D.persons[activePi].deductions)D.persons[activePi].deductions=[];
+  D.persons[activePi].deductions.push({label,amount:amt});
+  document.getElementById("new-dl").value="";
+  document.getElementById("new-da").value="";
+  save();renderPanel();renderList();
+}
+function delDed(di){D.persons[activePi].deductions.splice(di,1);save();renderPanel();renderList();}
+
+function openAddPerson(){
+  document.getElementById("modal-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("modal-name").focus(),150);
+}
+function closeModal(){
+  document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("modal-name").value="";
+}
+function confirmAddPerson(){
+  const name=document.getElementById("modal-name").value.trim();
+  if(!name)return;
+  D.persons.push({name,color:COLORS[D.persons.length%COLORS.length],debts:[],deductions:[],showDed:false});
+  save();renderList();closeModal();
+  setTimeout(()=>openPanel(D.persons.length-1),150);
+}
+document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)closeModal();});
+
+renderList();
+</script>
+</body>
+</html>
