@@ -10,7 +10,10 @@
 body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:80px;max-width:430px;margin:0 auto}
 .header{padding:56px 24px 8px;display:flex;justify-content:space-between;align-items:center}
 .header-left{font-size:17px;font-weight:400;color:#888}
-.avatar-btn{width:34px;height:34px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;border:none;cursor:pointer}
+.avatar-btn{width:34px;height:34px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;border:none}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#3a3a3c;display:inline-block;margin-left:6px;vertical-align:middle;transition:background .3s}
+.sync-dot.syncing{background:#ff9f0a}
+.sync-dot.ok{background:#30d158}
 .hero{padding:8px 24px 28px}
 .hero-label{font-size:14px;color:#666;margin-bottom:4px}
 .hero-amount{font-size:52px;font-weight:300;letter-spacing:-2px;color:#fff;line-height:1}
@@ -86,12 +89,13 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 .modal-cancel{background:transparent;border:none;color:#636366;font-family:'Inter',sans-serif;font-size:16px;padding:10px;width:100%;cursor:pointer}
 .del-person-btn{background:transparent;border:none;color:#ff453a;font-size:12px;font-family:'Inter',sans-serif;padding:0;cursor:pointer;margin-left:auto}
 .empty-msg{padding:40px 24px;text-align:center;color:#3a3a3c;font-size:15px;line-height:1.6}
+.loading{padding:40px 24px;text-align:center;color:#48484a;font-size:14px}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-left">Debiti</div>
+  <div class="header-left">Debiti <span class="sync-dot" id="sync-dot"></span></div>
   <div class="avatar-btn">M</div>
 </div>
 
@@ -116,7 +120,7 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
   <a onclick="openAddPerson()">+ Aggiungi</a>
 </div>
 
-<div id="list"></div>
+<div id="list"><div class="loading">Connessione...</div></div>
 
 <!-- DETAIL PANEL -->
 <div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
@@ -170,34 +174,75 @@ body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;
 
 <button class="add-fab" onclick="openAddPerson()">+</button>
 
-<script>
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, push, remove, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDA27tRKTQpc-mO22FQ8446JO-a-idrqhA",
+  authDomain: "debiti-d89fe.firebaseapp.com",
+  databaseURL: "https://debiti-d89fe-default-rtdb.europe-west1.firebaseapp.com",
+  projectId: "debiti-d89fe",
+  storageBucket: "debiti-d89fe.firebasestorage.app",
+  messagingSenderId: "768617640084",
+  appId: "1:768617640084:web:66813df2988b1fb029c481",
+  measurementId: "G-QC06VT77EW"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const dbRef = ref(db, "debiti");
+
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
-let D=load(), activePi=-1;
+let D = { persons: [] };
+let activePi = -1;
 
-function load(){try{const r=localStorage.getItem("deb5");if(r)return JSON.parse(r);}catch{}return{persons:[]};}
-function save(){try{localStorage.setItem("deb5",JSON.stringify(D));}catch{}}
-function fmt(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2})+"€";}
-function fmtN(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});}
-function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+const syncDot = document.getElementById("sync-dot");
+function setSyncing(){ syncDot.className="sync-dot syncing"; }
+function setSynced(){ syncDot.className="sync-dot ok"; }
 
-function calcNet(p){
-  const g=p.debts.reduce((s,d)=>s+(d.paid?0:d.amount),0);
-  const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);
-  return{g,ded,net:Math.max(0,g-ded)};
+function fmt(n){ return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2})+"€"; }
+function fmtN(n){ return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function saveAll(){
+  setSyncing();
+  set(dbRef, D).then(setSynced).catch(e=>{ console.error(e); setSynced(); });
 }
 
+function calcNet(p){
+  const g = (p.debts||[]).reduce((s,d)=>s+(d.paid?0:d.amount),0);
+  const ded = (p.deductions||[]).reduce((s,d)=>s+d.amount,0);
+  return { g, ded, net: Math.max(0,g-ded) };
+}
+
+// Listen for realtime changes
+onValue(dbRef, (snapshot) => {
+  const val = snapshot.val();
+  if(val && val.persons) {
+    D = val;
+  } else {
+    D = { persons: [] };
+  }
+  setSynced();
+  renderList();
+  if(activePi >= 0 && activePi < D.persons.length) renderPanel();
+});
+
 function renderList(){
-  const list=document.getElementById("list");
+  const list = document.getElementById("list");
   if(!D.persons.length){
     list.innerHTML='<div class="empty-msg">Nessuna persona ancora.<br>Tocca <strong>+</strong> per aggiungerne una.</div>';
-    document.getElementById("hero-num").textContent="0,00";return;
+    document.getElementById("hero-num").textContent="0,00"; return;
   }
-  let total=0;
-  list.innerHTML=D.persons.map((p,pi)=>{
-    const{net}=calcNet(p); total+=net;
-    const init=p.name.slice(0,2).toUpperCase();
-    const unpaid=p.debts.filter(d=>!d.paid).length;
-    return`<div class="person-row" onclick="openPanel(${pi})">
+  let total = 0;
+  list.innerHTML = D.persons.map((p,pi)=>{
+    const {net} = calcNet(p); total += net;
+    const init = p.name.slice(0,2).toUpperCase();
+    const unpaid = (p.debts||[]).filter(d=>!d.paid).length;
+    return `<div class="person-row" onclick="window._openPanel(${pi})">
       <div class="person-avatar" style="background:${p.color}">${init}</div>
       <div class="person-info">
         <div class="person-name">${esc(p.name)}</div>
@@ -207,113 +252,133 @@ function renderList(){
       <span class="chevron-r">›</span>
     </div><div class="divider"></div>`;
   }).join("");
-  document.getElementById("hero-num").textContent=fmtN(total);
+  document.getElementById("hero-num").textContent = fmtN(total);
 }
 
 function openPanel(pi){
-  activePi=pi;
+  activePi = pi;
   renderPanel();
   document.getElementById("panel-overlay").classList.add("open");
   document.getElementById("panel").classList.add("open");
-  document.getElementById("del-person-btn").onclick=()=>{
-    if(confirm("Eliminare "+D.persons[pi].name+"?"))
-    {D.persons.splice(pi,1);save();renderList();closePanel();}
+  document.getElementById("del-person-btn").onclick = () => {
+    if(confirm("Eliminare "+D.persons[pi].name+"?")) {
+      D.persons.splice(pi,1); saveAll(); closePanel();
+    }
   };
-  setTimeout(()=>document.getElementById("new-desc").focus(),400);
+  setTimeout(()=>document.getElementById("new-desc").focus(), 400);
 }
+window._openPanel = openPanel;
 
 function closePanel(){
   document.getElementById("panel-overlay").classList.remove("open");
   document.getElementById("panel").classList.remove("open");
-  activePi=-1;
+  activePi = -1;
 }
+window.closePanel = closePanel;
 
 function renderPanel(){
-  if(activePi<0)return;
-  const p=D.persons[activePi];
-  const{g,ded,net}=calcNet(p);
-  document.getElementById("panel-avatar").style.background=p.color;
-  document.getElementById("panel-avatar").textContent=p.name.slice(0,2).toUpperCase();
-  document.getElementById("panel-name").textContent=p.name;
-  const ne=document.getElementById("panel-net");
-  ne.textContent=fmt(net); ne.className="panel-net "+(net===0?"zero":"due");
-  document.getElementById("sum-gross").textContent=fmt(g+ded);
-  document.getElementById("sum-ded").textContent="−"+fmt(ded);
-  document.getElementById("sum-net").textContent=fmt(net);
-  document.getElementById("ded-total-label").textContent="−"+fmt(ded);
+  if(activePi < 0 || activePi >= D.persons.length) return;
+  const p = D.persons[activePi];
+  const {g, ded, net} = calcNet(p);
+  document.getElementById("panel-avatar").style.background = p.color;
+  document.getElementById("panel-avatar").textContent = p.name.slice(0,2).toUpperCase();
+  document.getElementById("panel-name").textContent = p.name;
+  const ne = document.getElementById("panel-net");
+  ne.textContent = fmt(net); ne.className = "panel-net "+(net===0?"zero":"due");
+  document.getElementById("sum-gross").textContent = fmt(g+ded);
+  document.getElementById("sum-ded").textContent = "−"+fmt(ded);
+  document.getElementById("sum-net").textContent = fmt(net);
+  document.getElementById("ded-total-label").textContent = "−"+fmt(ded);
 
-  const dl=document.getElementById("panel-debts");
-  dl.innerHTML=!p.debts.length
-    ?'<div style="padding:16px 24px;font-size:14px;color:#3a3a3c">Nessuna voce ancora.</div>'
-    :p.debts.map((d,di)=>`
+  const dl = document.getElementById("panel-debts");
+  const debts = p.debts || [];
+  dl.innerHTML = !debts.length
+    ? '<div style="padding:16px 24px;font-size:14px;color:#3a3a3c">Nessuna voce ancora.</div>'
+    : debts.map((d,di)=>`
       <div class="debt-row${d.paid?" paid-row":""}">
-        <div class="debt-check${d.paid?" done":""}" onclick="togglePaid(${di})">${d.paid?"✓":""}</div>
+        <div class="debt-check${d.paid?" done":""}" onclick="window._togglePaid(${di})">${d.paid?"✓":""}</div>
         <div class="debt-text">
           <div class="debt-desc">${esc(d.desc)}</div>
           <div class="debt-amt-s">${fmt(d.amount)}</div>
         </div>
-        <button class="del-x" onclick="delDebt(${di})">✕</button>
+        <button class="del-x" onclick="window._delDebt(${di})">✕</button>
       </div>`).join("");
 
-  document.getElementById("ded-list").innerHTML=!(p.deductions||[]).length?""
-    :p.deductions.map((d,di)=>`
+  const deds = p.deductions || [];
+  document.getElementById("ded-list").innerHTML = !deds.length ? ""
+    : deds.map((d,di)=>`
       <div class="ded-row">
         <div class="ded-name">${esc(d.label)}</div>
         <div class="ded-amt">−${fmt(d.amount)}</div>
-        <button class="del-x" onclick="delDed(${di})">✕</button>
+        <button class="del-x" onclick="window._delDed(${di})">✕</button>
       </div>`).join("");
 
-  document.getElementById("ded-section").style.display=p.showDed?"block":"none";
+  document.getElementById("ded-section").style.display = p.showDed ? "block" : "none";
 }
 
-function toggleDed(){if(activePi<0)return;D.persons[activePi].showDed=!D.persons[activePi].showDed;save();renderPanel();}
+window._togglePaid = function(di){
+  D.persons[activePi].debts[di].paid = !D.persons[activePi].debts[di].paid;
+  saveAll(); renderPanel(); renderList();
+};
+window._delDebt = function(di){
+  D.persons[activePi].debts.splice(di,1);
+  saveAll(); renderPanel(); renderList();
+};
+window._delDed = function(di){
+  D.persons[activePi].deductions.splice(di,1);
+  saveAll(); renderPanel(); renderList();
+};
 
-function addDebt(){
-  if(activePi<0)return;
-  const desc=document.getElementById("new-desc").value.trim();
-  const amt=parseFloat(document.getElementById("new-amt").value);
-  if(!desc||isNaN(amt)||amt<=0)return;
-  D.persons[activePi].debts.push({desc,amount:amt,paid:false});
-  document.getElementById("new-desc").value="";
-  document.getElementById("new-amt").value="";
-  save();renderPanel();renderList();
+window.toggleDed = function(){
+  if(activePi<0) return;
+  D.persons[activePi].showDed = !D.persons[activePi].showDed;
+  saveAll(); renderPanel();
+};
+
+window.addDebt = function(){
+  if(activePi<0) return;
+  const desc = document.getElementById("new-desc").value.trim();
+  const amt = parseFloat(document.getElementById("new-amt").value);
+  if(!desc||isNaN(amt)||amt<=0) return;
+  if(!D.persons[activePi].debts) D.persons[activePi].debts = [];
+  D.persons[activePi].debts.push({desc, amount:amt, paid:false});
+  document.getElementById("new-desc").value = "";
+  document.getElementById("new-amt").value = "";
+  saveAll(); renderPanel(); renderList();
   document.getElementById("new-desc").focus();
-}
+};
 
-function delDebt(di){D.persons[activePi].debts.splice(di,1);save();renderPanel();renderList();}
-function togglePaid(di){D.persons[activePi].debts[di].paid=!D.persons[activePi].debts[di].paid;save();renderPanel();renderList();}
+window.addDed = function(){
+  if(activePi<0) return;
+  const label = document.getElementById("new-dl").value.trim();
+  const amt = parseFloat(document.getElementById("new-da").value);
+  if(!label||isNaN(amt)||amt<=0) return;
+  if(!D.persons[activePi].deductions) D.persons[activePi].deductions = [];
+  D.persons[activePi].deductions.push({label, amount:amt});
+  document.getElementById("new-dl").value = "";
+  document.getElementById("new-da").value = "";
+  saveAll(); renderPanel(); renderList();
+};
 
-function addDed(){
-  if(activePi<0)return;
-  const label=document.getElementById("new-dl").value.trim();
-  const amt=parseFloat(document.getElementById("new-da").value);
-  if(!label||isNaN(amt)||amt<=0)return;
-  if(!D.persons[activePi].deductions)D.persons[activePi].deductions=[];
-  D.persons[activePi].deductions.push({label,amount:amt});
-  document.getElementById("new-dl").value="";
-  document.getElementById("new-da").value="";
-  save();renderPanel();renderList();
-}
-function delDed(di){D.persons[activePi].deductions.splice(di,1);save();renderPanel();renderList();}
-
-function openAddPerson(){
+window.openAddPerson = function(){
   document.getElementById("modal-overlay").classList.add("open");
-  setTimeout(()=>document.getElementById("modal-name").focus(),150);
-}
-function closeModal(){
+  setTimeout(()=>document.getElementById("modal-name").focus(), 150);
+};
+window.closeModal = function(){
   document.getElementById("modal-overlay").classList.remove("open");
-  document.getElementById("modal-name").value="";
-}
-function confirmAddPerson(){
-  const name=document.getElementById("modal-name").value.trim();
-  if(!name)return;
-  D.persons.push({name,color:COLORS[D.persons.length%COLORS.length],debts:[],deductions:[],showDed:false});
-  save();renderList();closeModal();
-  setTimeout(()=>openPanel(D.persons.length-1),150);
-}
-document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)closeModal();});
+  document.getElementById("modal-name").value = "";
+};
+window.confirmAddPerson = function(){
+  const name = document.getElementById("modal-name").value.trim();
+  if(!name) return;
+  D.persons.push({name, color:COLORS[D.persons.length%COLORS.length], debts:[], deductions:[], showDed:false});
+  saveAll(); renderList(); closeModal();
+  setTimeout(()=>openPanel(D.persons.length-1), 150);
+};
 
-renderList();
+document.getElementById("modal-overlay").addEventListener("click", function(e){
+  if(e.target===this) window.closeModal();
+});
 </script>
 </body>
 </html>
