@@ -132,7 +132,7 @@ body.panel-open{overflow:hidden}
   <div class="header-right">
     <span class="version-badge">v7</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
-    <div class="avatar-btn">M</div>
+    <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
 </div>
 <div class="hero">
@@ -198,6 +198,17 @@ body.panel-open{overflow:hidden}
 </div>
 <button class="add-fab" onclick="openAddPerson()">+</button>
 
+
+<!-- NAME MODAL -->
+<div class="modal-overlay" id="name-modal-overlay">
+  <div class="modal">
+    <h3>Il tuo nome</h3>
+    <input class="modal-input" id="my-name-input" placeholder="Es. Marco..." maxlength="30" onkeydown="if(event.key==='Enter')saveMyName()">
+    <button class="modal-btn" onclick="saveMyName()">Salva</button>
+    <button class="modal-cancel" onclick="closeNameModal()">Annulla</button>
+  </div>
+</div>
+
 <!-- HIDDEN PDF CONTENT -->
 <div id="pdf-content" style="display:none"></div>
 
@@ -208,6 +219,29 @@ const firebaseConfig={apiKey:"AIzaSyDA27tRKTQpc-mO22FQ8446JO-a-idrqhA",authDomai
 const app=initializeApp(firebaseConfig);const db=getDatabase(app);const dbRef=ref(db,"debiti");
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
 let D={persons:[]},activePi=-1,addDir="receive",editingDi=-1,editDir="receive";
+
+// My name
+let myName=localStorage.getItem("myName")||"Marco";
+function applyMyName(){
+  const btn=document.getElementById("avatar-btn");
+  if(btn) btn.textContent=(myName||"?").slice(0,1).toUpperCase();
+}
+window.openNameModal=function(){
+  document.getElementById("my-name-input").value=myName;
+  document.getElementById("name-modal-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("my-name-input").focus(),150);
+};
+window.closeNameModal=function(){document.getElementById("name-modal-overlay").classList.remove("open");};
+window.saveMyName=function(){
+  const v=document.getElementById("my-name-input").value.trim();
+  if(!v)return;
+  myName=v;
+  localStorage.setItem("myName",myName);
+  applyMyName();
+  closeNameModal();
+};
+document.getElementById("name-modal-overlay").addEventListener("click",function(e){if(e.target===this)window.closeNameModal();});
+applyMyName();
 
 let isLight=localStorage.getItem("theme")==="light";
 function applyTheme(){document.body.classList.toggle("light",isLight);document.getElementById("theme-btn").textContent=isLight?"🌙":"☀️";}
@@ -304,7 +338,11 @@ window.printPDF=function(){
   const openDebts=debts.filter(d=>!d.paid);
   const paidDebts=debts.filter(d=>d.paid);
   const deds=p.deductions||[];
-
+  const sentence = net > 0
+    ? `<strong>${esc(p.name)}</strong> deve a <strong>${esc(myName)}</strong>`
+    : net < 0
+    ? `<strong>${esc(myName)}</strong> deve a <strong>${esc(p.name)}</strong>`
+    : `<strong>${esc(myName)}</strong> e <strong>${esc(p.name)}</strong> sono pari`;
   const rows=(arr,showPaid)=>arr.map(d=>`
     <tr style="border-bottom:1px solid #eee;${showPaid?"opacity:.5":""}">
       <td style="padding:8px 6px;font-size:13px">${esc(d.desc)}</td>
@@ -313,50 +351,80 @@ window.printPDF=function(){
       <td style="padding:8px 6px;font-size:13px;font-weight:600;text-align:right">${fmt(d.amount)}</td>
     </tr>`).join("");
 
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Riepilogo ${esc(p.name)}</title>
-  <style>
-    body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;max-width:680px;margin:40px auto;padding:0 24px}
-    h1{font-size:26px;font-weight:700;margin-bottom:4px}
-    .sub{font-size:13px;color:#888;margin-bottom:32px}
-    .totals{display:flex;gap:16px;margin-bottom:32px}
-    .tot-card{flex:1;border:1px solid #eee;border-radius:10px;padding:16px}
-    .tot-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-    .tot-val{font-size:22px;font-weight:700}
-    .tot-val.green{color:#34c759}.tot-val.red{color:#ff3b30}.tot-val.black{color:#111}
-    table{width:100%;border-collapse:collapse;margin-bottom:24px}
-    th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;padding:6px 6px 10px;border-bottom:2px solid #eee}
-    .section-title{font-size:14px;font-weight:700;margin:24px 0 8px;color:#444;text-transform:uppercase;letter-spacing:.5px}
-    .ded-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
-    .footer{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between}
-  </style>
-  </head><body>
+  const bodyHTML=`
   <h1>Riepilogo — ${esc(p.name)}</h1>
   <div class="sub">Generato il ${today}</div>
+  <div class="sentence">${sentence}</div>
   <div class="totals">
     <div class="tot-card"><div class="tot-label">Mi deve dare</div><div class="tot-val green">${fmt(receive)}</div></div>
     <div class="tot-card"><div class="tot-label">Devo dare</div><div class="tot-val red">${fmt(give)}</div></div>
     ${deds.length?`<div class="tot-card"><div class="tot-label">Sconti</div><div class="tot-val" style="color:#888">−${fmt(ded)}</div></div>`:""}
     <div class="tot-card"><div class="tot-label">Totale netto</div><div class="tot-val ${net>=0?"green":"red"}">${fmt(net)}</div></div>
   </div>
-  ${openDebts.length?`
-  <div class="section-title">Voci aperte (${openDebts.length})</div>
+  ${openDebts.length?`<div class="section-title">Voci aperte (${openDebts.length})</div>
   <table><thead><tr><th>Descrizione</th><th>Data</th><th>Tipo</th><th style="text-align:right">Importo</th></tr></thead>
   <tbody>${rows(openDebts,false)}</tbody></table>`:""}
-  ${deds.length?`
-  <div class="section-title">Da sottrarre</div>
-  ${deds.map(d=>`<div class="ded-row"><span>${esc(d.label)}</span><span style="color:#34c759">−${fmt(d.amount)}</span></div>`).join("")}`:""}
-  ${paidDebts.length?`
-  <div class="section-title">Voci saldate (${paidDebts.length})</div>
+  ${deds.length?`<div class="section-title">Da sottrarre</div>${deds.map(d=>`<div class="ded-row"><span>${esc(d.label)}</span><span style="color:#34c759">−${fmt(d.amount)}</span></div>`).join("")}`:""}
+  ${paidDebts.length?`<div class="section-title">Voci saldate (${paidDebts.length})</div>
   <table><thead><tr><th>Descrizione</th><th>Data</th><th>Tipo</th><th style="text-align:right">Importo</th></tr></thead>
   <tbody>${rows(paidDebts,true)}</tbody></table>`:""}
-  <div class="footer"><span>Debiti App</span><span>${esc(p.name)} · ${today}</span></div>
+  <div class="footer"><span>Debiti App</span><span>${esc(p.name)} · ${today}</span></div>`;
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Riepilogo ${esc(p.name)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;max-width:680px;margin:0 auto;padding:24px 20px 60px}
+    h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .sub{font-size:13px;color:#888;margin-bottom:16px}
+    .sentence{font-size:17px;margin-bottom:28px;padding:16px 20px;background:#f0faf3;border-radius:10px;border-left:4px solid #34c759}
+    .totals{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap}
+    .tot-card{flex:1;min-width:120px;border:1px solid #eee;border-radius:10px;padding:14px}
+    .tot-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+    .tot-val{font-size:20px;font-weight:700}
+    .tot-val.green{color:#34c759}.tot-val.red{color:#ff3b30}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px}
+    th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#888;padding:6px 6px 10px;border-bottom:2px solid #eee}
+    .section-title{font-size:12px;font-weight:700;margin:20px 0 8px;color:#444;text-transform:uppercase;letter-spacing:.5px}
+    .ded-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
+    .footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between}
+    /* SHARE BAR */
+    .share-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:12px 16px;display:flex;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+    .btn-share{flex:1;background:#000;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+    .btn-print{flex:1;background:#f2f2f2;color:#000;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+    @media print{.share-bar{display:none}}
+  </style>
+  </head><body>
+  <div id="main">${bodyHTML}</div>
+  <div class="share-bar">
+    <button class="btn-print" onclick="window.print()">🖨️ Stampa</button>
+    <button class="btn-share" onclick="shareDoc()">📤 Condividi</button>
+  </div>
+  <script>
+  async function shareDoc(){
+    const text = document.getElementById("main").innerText;
+    const title = "Riepilogo ${esc(p.name)} — ${today}";
+    if(navigator.share){
+      try{
+        await navigator.share({title, text});
+      }catch(e){
+        if(e.name!=="AbortError") fallbackCopy(text);
+      }
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    navigator.clipboard.writeText(text).then(()=>alert("Testo copiato negli appunti!")).catch(()=>alert("Usa il tasto Stampa e poi Condividi da lì."));
+  }
+  <\/script>
   </body></html>`;
 
-  const w=window.open("","_blank","width=750,height=900");
+  const w=window.open("","_blank");
+  if(!w){alert("Abilita i popup per questo sito.");return;}
   w.document.write(html);
   w.document.close();
-  w.onload=()=>{ w.focus(); w.print(); };
 };
 
 window.startEdit=function(di){editingDi=di;editDir=D.persons[activePi].debts[di].dir;renderPanel();setTimeout(()=>document.getElementById("edit-desc")?.focus(),50);};
