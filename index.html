@@ -130,7 +130,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v8</span>
+    <span class="version-badge">v9</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -324,7 +324,9 @@ function renderPanel(){
   if(!debts.length){dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';}
   else{
     const visibleDebts=showHistory?debts:openDebtsPanel;
-    dl.innerHTML=visibleDebts.map((d)=>{
+    if(!visibleDebts.length && !openDebtsPanel.length){dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';
+    } else {
+    dl.innerHTML=(visibleDebts.length?visibleDebts:[]).map((d)=>{
     const di=d._origIdx;
     if(editingDi===di){return`<div class="debt-edit-row"><div class="edit-dir-row"><button class="edit-dir-btn${editDir==="give"?" active-give":""}" id="edit-dir-give" onclick="setEditDir('give')">↑ Devo dare</button><button class="edit-dir-btn${editDir==="receive"?" active-receive":""}" id="edit-dir-receive" onclick="setEditDir('receive')">↓ Mi devono</button></div><div class="edit-row-inputs"><input class="panel-input" id="edit-desc" value="${esc(d.desc)}" placeholder="Descrizione..."><input class="panel-input amt-small" id="edit-amt" type="number" value="${d.amount}" step="0.01" min="0"></div><input class="date-input" id="edit-date" type="date" value="${d.date||todayStr()}"><div style="display:flex;gap:8px"><button class="edit-save-btn" onclick="saveEdit(${di})">Salva</button><button class="edit-cancel-btn" onclick="cancelEdit()">Annulla</button></div></div>`;}
     return`<div class="debt-row${d.paid?" paid-row":""}"><div class="debt-check${d.paid?" done":""}" onclick="window._togglePaid(${di})">${d.paid?"✓":""}</div><div class="debt-text"><div class="debt-desc">${esc(d.desc)}</div><div class="debt-meta"><span>${fmt(d.amount)}</span><span class="debt-dir-tag ${d.dir==="give"?"tag-give":"tag-receive"}">${d.dir==="give"?"devo dare":"mi deve"}</span></div>${d.date?`<div class="debt-date">${fmtDate(d.date)}</div>`:""}</div><div class="debt-actions"><button class="debt-action-btn" onclick="startEdit(${di})">✏️</button><button class="debt-action-btn" onclick="window._delDebt(${di})">✕</button></div></div>`;
@@ -355,165 +357,161 @@ window.printPDF=function(){
   script.onload=function(){
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-    const W=210, margin=20;
+    const W=210, L=16, R=194;
     let y=20;
 
-    // Header
-    doc.setFillColor(0,0,0);
-    doc.rect(0,0,W,14,`F`);
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(9);
-    doc.setFont("helvetica","bold");
-    doc.text("DEBITI APP",margin,9);
-    doc.text(`Generato il ${today}`,W-margin,9,{align:"right"});
-    y=26;
+    function checkPage(){if(y>272){doc.addPage();y=18;}}
 
-    // Title
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(22);
+    // Header bar
+    doc.setFillColor(15,15,15);
+    doc.rect(0,0,W,13,"F");
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(8);
     doc.setFont("helvetica","bold");
-    doc.text(`Riepilogo — ${p.name}`,margin,y);
+    doc.text("DEBITI APP",L,8.5);
+    doc.setFont("helvetica","normal");
+    doc.text("Generato il "+today,R,8.5,{align:"right"});
+
+    y=24;
+    // Title
+    doc.setTextColor(10,10,10);
+    doc.setFontSize(20);
+    doc.setFont("helvetica","bold");
+    doc.text("Riepilogo - "+p.name,L,y);
     y+=10;
 
     // Sentence box
-    doc.setFillColor(240,250,243);
+    doc.setFillColor(240,252,244);
     doc.setDrawColor(52,199,89);
-    doc.setLineWidth(0.8);
-    doc.rect(margin,y,W-margin*2,12,`FD`);
-    doc.setFontSize(12);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(L,y,R-L,11,2,2,"FD");
+    doc.setFontSize(11);
     doc.setFont("helvetica","bold");
-    doc.setTextColor(20,20,20);
-    doc.text(sentenceText,margin+4,y+7.5);
-    y+=20;
+    doc.setTextColor(20,100,50);
+    doc.text(sentenceText,L+4,y+7.2);
+    y+=18;
 
-    // Totals row
+    // Totals cards
     const cards=[
-      {label:"Mi devono dare",val:fmt(receive),color:[52,199,89]},
-      {label:"Devo dare",val:fmt(give),color:[255,59,48]},
-      ...(deds.length?[{label:"Sconti",val:"−"+fmt(ded),color:[142,142,147]}]:[]),
-      {label:"Totale netto",val:fmt(Math.abs(net)),color:net>=0?[52,199,89]:[255,59,48]},
+      {label:"MI DEVONO DARE",val:fmt(receive),r:52,g:199,b:89},
+      {label:"DEVO DARE",val:fmt(give),r:255,g:59,b:48},
+      ...(deds.length?[{label:"SCONTI",val:"-"+fmt(ded),r:142,g:142,b:147}]:[]),
+      {label:"TOTALE NETTO",val:fmt(Math.abs(net)),r:net>=0?52:255,g:net>=0?199:59,b:net>=0?89:48},
     ];
-    const cw=(W-margin*2-(cards.length-1)*4)/cards.length;
+    const gap=4, cw=(R-L-(cards.length-1)*gap)/cards.length;
     cards.forEach((c,i)=>{
-      const cx=margin+i*(cw+4);
+      const cx=L+i*(cw+gap);
       doc.setFillColor(248,248,248);
-      doc.setDrawColor(230,230,230);
-      doc.setLineWidth(0.3);
-      doc.rect(cx,y,cw,18,`FD`);
-      doc.setFontSize(7);
+      doc.setDrawColor(225,225,225);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(cx,y,cw,17,2,2,"FD");
+      doc.setFontSize(6.5);
       doc.setFont("helvetica","normal");
-      doc.setTextColor(130,130,130);
-      doc.text(c.label.toUpperCase(),cx+3,y+5);
-      doc.setFontSize(11);
+      doc.setTextColor(140,140,140);
+      doc.text(c.label,cx+3,y+5.5);
+      doc.setFontSize(10.5);
       doc.setFont("helvetica","bold");
-      doc.setTextColor(...c.color);
+      doc.setTextColor(c.r,c.g,c.b);
       doc.text(c.val,cx+3,y+13);
     });
-    y+=26;
+    y+=24;
 
-    // Helper: table section
-    function drawTable(title,rows){
+    // Table helper
+    function drawSection(title, rows, faded){
       if(!rows.length)return;
-      // Section title
-      doc.setFontSize(8);
+      checkPage();
+      doc.setFontSize(7.5);
       doc.setFont("helvetica","bold");
-      doc.setTextColor(80,80,80);
-      doc.text(title.toUpperCase(),margin,y);
-      y+=2;
+      doc.setTextColor(90,90,90);
+      doc.text(title,L,y);
+      y+=2.5;
       doc.setDrawColor(200,200,200);
       doc.setLineWidth(0.3);
-      doc.line(margin,y,W-margin,y);
-      y+=5;
-      // Header
-      doc.setFontSize(7);
+      doc.line(L,y,R,y);
+      y+=4.5;
+
+      // Col headers
+      doc.setFontSize(6.5);
       doc.setFont("helvetica","bold");
-      doc.setTextColor(150,150,150);
-      doc.text("DESCRIZIONE",margin,y);
-      doc.text("DATA",margin+90,y);
-      doc.text("TIPO",margin+118,y);
-      doc.text("IMPORTO",W-margin,y,{align:"right"});
+      doc.setTextColor(160,160,160);
+      doc.text("DESCRIZIONE",L,y);
+      doc.text("DATA",L+95,y);
+      doc.text("TIPO",L+118,y);
+      doc.text("IMPORTO",R,y,{align:"right"});
       y+=2;
-      doc.line(margin,y,W-margin,y);
-      y+=5;
-      // Rows
+      doc.setDrawColor(220,220,220);
+      doc.line(L,y,R,y);
+      y+=4;
+
       rows.forEach(d=>{
-        if(y>270){doc.addPage();y=20;}
+        checkPage();
+        const alpha = faded ? 120 : 20;
+        // Description (may wrap)
+        doc.setFontSize(9);
         doc.setFont("helvetica","normal");
-        doc.setFontSize(9);
-        doc.setTextColor(d.paid?160:20,d.paid?160:20,d.paid?160:20);
-        const descLines=doc.splitTextToSize(d.desc,85);
-        doc.text(descLines,margin,y);
+        doc.setTextColor(alpha,alpha,alpha);
+        const lines=doc.splitTextToSize(d.desc,88);
+        doc.text(lines,L,y);
+        // Date
         doc.setFontSize(8);
-        doc.setTextColor(140,140,140);
-        doc.text(fmtDate(d.date||""),margin+90,y);
-        if(d.dir==="give"){doc.setTextColor(255,59,48);doc.text("↑ devo dare",margin+118,y);}
-        else{doc.setTextColor(52,199,89);doc.text("↓ mi deve",margin+118,y);}
+        doc.setTextColor(faded?160:130,faded?160:130,faded?160:130);
+        doc.text(fmtDate(d.date||""),L+95,y);
+        // Type - text only, no symbols
+        const typeLabel = d.dir==="give" ? "devo dare" : "mi deve";
+        const tr=d.dir==="give"?[220,60,50]:[52,180,89];
         doc.setFont("helvetica","bold");
-        doc.setTextColor(d.paid?160:20,d.paid?160:20,d.paid?160:20);
+        doc.setFontSize(7.5);
+        doc.setTextColor(faded?160:tr[0], faded?160:tr[1], faded?160:tr[2]);
+        doc.text(typeLabel,L+118,y);
+        // Amount
         doc.setFontSize(9);
-        doc.text(fmt(d.amount),W-margin,y,{align:"right"});
-        y+=descLines.length>1?descLines.length*4+2:7;
+        doc.setTextColor(alpha,alpha,alpha);
+        doc.text(fmt(d.amount),R,y,{align:"right"});
+        const rowH=lines.length>1?lines.length*4.5+1:7;
+        y+=rowH;
         doc.setDrawColor(240,240,240);
-        doc.setLineWidth(0.2);
-        doc.line(margin,y-2,W-margin,y-2);
+        doc.setLineWidth(0.15);
+        doc.line(L,y-1,R,y-1);
       });
-      y+=6;
+      y+=5;
     }
 
-    drawTable(`Voci aperte (${openDebts.length})`,openDebts);
+    drawSection("VOCI APERTE ("+openDebts.length+")", openDebts, false);
 
     // Deductions
     if(deds.length){
-      doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(80,80,80);
-      doc.text("DA SOTTRARRE",margin,y);y+=2;
-      doc.setDrawColor(200,200,200);doc.line(margin,y,W-margin,y);y+=5;
+      checkPage();
+      doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(90,90,90);
+      doc.text("DA SOTTRARRE",L,y);y+=2.5;
+      doc.setDrawColor(200,200,200);doc.line(L,y,R,y);y+=5;
       deds.forEach(d=>{
+        checkPage();
         doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(40,40,40);
-        doc.text(d.label,margin,y);
-        doc.setTextColor(52,199,89);doc.setFont("helvetica","bold");
-        doc.text("−"+fmt(d.amount),W-margin,y,{align:"right"});
+        doc.text(d.label,L,y);
+        doc.setFont("helvetica","bold");doc.setTextColor(52,180,89);
+        doc.text("-"+fmt(d.amount),R,y,{align:"right"});
         y+=7;
       });
       y+=4;
     }
 
-    if(paidDebts.length) drawTable(`Storico pagati (${paidDebts.length})`,paidDebts);
+    drawSection("STORICO PAGATI ("+paidDebts.length+")", paidDebts, true);
 
     // Footer
-    doc.setFontSize(8);doc.setFont("helvetica","normal");doc.setTextColor(180,180,180);
-    doc.text(`Debiti App · ${p.name} · ${today}`,W/2,285,{align:"center"});
+    doc.setFontSize(7.5);doc.setFont("helvetica","normal");doc.setTextColor(190,190,190);
+    doc.text("Debiti App  |  "+p.name+"  |  "+today, W/2, 287, {align:"center"});
 
-    // Save/share
-    const pdfName=`Riepilogo_${p.name}_${todayStr()}.pdf`;
+    // Output
+    const pdfName="Riepilogo_"+p.name+"_"+todayStr()+".pdf";
     const blob=doc.output("blob");
     const url=URL.createObjectURL(blob);
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],pdfName,{type:"application/pdf"})]})){
-      navigator.share({title:`Riepilogo ${p.name}`,files:[new File([blob],pdfName,{type:"application/pdf"})]}).catch(()=>{});
-    } else {
-      const a=document.createElement("a");a.href=url;a.download=pdfName;a.click();
+    if(navigator.share&&navigator.canShare){
+      const file=new File([blob],pdfName,{type:"application/pdf"});
+      if(navigator.canShare({files:[file]})){
+        navigator.share({title:"Riepilogo "+p.name,files:[file]}).catch(()=>{});
+        return;
+      }
     }
+    const a=document.createElement("a");a.href=url;a.download=pdfName;a.click();
   };
-  document.head.appendChild(script);
-};
-
-window._toggleHistory=function(){
-  if(activePi<0)return;
-  D.persons[activePi].showHistory=!D.persons[activePi].showHistory;
-  renderPanel();
-};
-window.startEdit=function(di){editingDi=di;editDir=D.persons[activePi].debts[di].dir;renderPanel();setTimeout(()=>document.getElementById("edit-desc")?.focus(),50);};
-window.cancelEdit=function(){editingDi=-1;renderPanel();};
-window.saveEdit=function(di){const desc=document.getElementById("edit-desc").value.trim();const amt=parseFloat(document.getElementById("edit-amt").value);const date=document.getElementById("edit-date").value;if(!desc||isNaN(amt)||amt<=0)return;D.persons[activePi].debts[di]={...D.persons[activePi].debts[di],desc,amount:amt,dir:editDir,date};editingDi=-1;saveAll();renderPanel();renderList();};
-window._togglePaid=function(di){D.persons[activePi].debts[di].paid=!D.persons[activePi].debts[di].paid;saveAll();renderPanel();renderList();};
-window._delDebt=function(di){D.persons[activePi].debts.splice(di,1);editingDi=-1;saveAll();renderPanel();renderList();};
-window._delDed=function(di){D.persons[activePi].deductions.splice(di,1);saveAll();renderPanel();renderList();};
-window.toggleDed=function(){if(activePi<0)return;D.persons[activePi].showDed=!D.persons[activePi].showDed;saveAll();renderPanel();};
-window.addDebt=function(){if(activePi<0)return;const desc=document.getElementById("new-desc").value.trim();const amt=parseFloat(document.getElementById("new-amt").value);const date=document.getElementById("new-date").value||todayStr();if(!desc||isNaN(amt)||amt<=0)return;if(!D.persons[activePi].debts)D.persons[activePi].debts=[];D.persons[activePi].debts.push({desc,amount:amt,paid:false,dir:addDir,date});document.getElementById("new-desc").value="";document.getElementById("new-amt").value="";document.getElementById("new-date").value=todayStr();saveAll();renderPanel();renderList();document.getElementById("new-desc").focus();};
-window.addDed=function(){if(activePi<0)return;const label=document.getElementById("new-dl").value.trim();const amt=parseFloat(document.getElementById("new-da").value);if(!label||isNaN(amt)||amt<=0)return;if(!D.persons[activePi].deductions)D.persons[activePi].deductions=[];D.persons[activePi].deductions.push({label,amount:amt});document.getElementById("new-dl").value="";document.getElementById("new-da").value="";saveAll();renderPanel();renderList();};
-window.openAddPerson=function(){document.getElementById("modal-overlay").classList.add("open");setTimeout(()=>document.getElementById("modal-name").focus(),150);};
-window.closeModal=function(){document.getElementById("modal-overlay").classList.remove("open");document.getElementById("modal-name").value="";};
-window.confirmAddPerson=function(){const name=document.getElementById("modal-name").value.trim();if(!name)return;D.persons.push({name,color:COLORS[D.persons.length%COLORS.length],debts:[],deductions:[],showDed:false});saveAll();renderList();closeModal();setTimeout(()=>openPanel(D.persons.length-1),150);};
-document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)window.closeModal();});
-</script>
-</body>
-</html>
+  document.head.appendChild(script)
