@@ -61,7 +61,6 @@ body.panel-open{overflow:hidden}
 .panel-net.zero{color:var(--text3)}.panel-net.receive{color:var(--green)}.panel-net.give{color:var(--red)}
 .close-btn{background:var(--bg3);border:none;color:var(--text);width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .panel-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-/* DEBT ROWS */
 .debt-row{display:flex;align-items:flex-start;gap:12px;padding:13px 24px;border-bottom:1px solid var(--border)}
 .debt-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:#000;margin-top:2px}
 .debt-check.done{background:var(--green);border-color:var(--green)}
@@ -75,7 +74,6 @@ body.panel-open{overflow:hidden}
 .debt-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
 .debt-action-btn{background:transparent;border:none;color:var(--text4);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1}
 .debt-action-btn:active{color:var(--text)}
-/* EDIT ROW */
 .debt-edit-row{padding:10px 24px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .edit-row-inputs{display:flex;gap:8px}
 .edit-dir-row{display:flex;gap:6px}
@@ -83,7 +81,6 @@ body.panel-open{overflow:hidden}
 .edit-dir-btn.active-give{background:rgba(255,69,58,.2);color:var(--red)}.edit-dir-btn.active-receive{background:rgba(48,209,88,.2);color:var(--green)}
 .edit-save-btn{background:var(--fab);color:var(--fab-text);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px;cursor:pointer;flex:1}
 .edit-cancel-btn{background:transparent;border:none;color:var(--text3);font-family:'Inter',sans-serif;font-size:13px;padding:9px;cursor:pointer}
-/* ADD FORM */
 .panel-add{padding:16px 24px;background:var(--bg3);border-top:1px solid var(--border2);flex-shrink:0}
 .dir-select-row{display:flex;gap:8px;margin-bottom:8px}
 .dir-mini-btn{flex:1;padding:9px;border-radius:9px;border:none;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;background:var(--bg2);color:var(--text3);transition:all .15s}
@@ -92,10 +89,13 @@ body.panel-open{overflow:hidden}
 .panel-input{background:var(--input);border:none;border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:16px;padding:11px 13px;outline:none;flex:1;-webkit-appearance:none;transition:background .2s}
 .panel-input::placeholder{color:var(--text4)}.panel-input:focus{background:var(--input-focus)}
 .amt-small{max-width:85px}
-.date-input{background:var(--input);border:none;border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:16px;padding:11px 13px;outline:none;width:100%;-webkit-appearance:none;margin-bottom:8px;transition:background .2s}
+.date-input{background:var(--input);border:none;border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:16px;padding:11px 13px;outline:none;width:100%;-webkit-appearance:none;margin-bottom:8px}
 .date-input:focus{background:var(--input-focus)}
 .panel-add-btn{background:var(--fab);color:var(--fab-text);border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:11px 0;width:100%;cursor:pointer;transition:background .2s,color .2s}
 .panel-add-btn:active{opacity:.8}
+/* PDF BUTTON */
+.pdf-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 24px 0;padding:12px;background:var(--bg3);border:none;border-radius:12px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;width:calc(100% - 48px)}
+.pdf-btn:active{opacity:.7}
 .ded-toggle{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;cursor:pointer;border-top:1px solid var(--border)}
 .ded-toggle-label{font-size:13px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.6px}
 .ded-toggle-amt{font-size:13px;color:var(--green)}
@@ -117,13 +117,20 @@ body.panel-open{overflow:hidden}
 .modal-cancel{background:transparent;border:none;color:var(--text3);font-family:'Inter',sans-serif;font-size:16px;padding:10px;width:100%;cursor:pointer}
 .empty-msg{padding:40px 24px;text-align:center;color:var(--text4);font-size:15px;line-height:1.6}
 .loading{padding:40px 24px;text-align:center;color:var(--text3);font-size:14px}
+
+/* PDF PRINT STYLES */
+@media print {
+  body * { visibility: hidden; }
+  #pdf-content, #pdf-content * { visibility: visible; }
+  #pdf-content { position: fixed; top: 0; left: 0; width: 100%; }
+}
 </style>
 </head>
 <body>
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v6</span>
+    <span class="version-badge">v7</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn">M</div>
   </div>
@@ -160,6 +167,7 @@ body.panel-open{overflow:hidden}
       <input class="date-input" id="new-date" type="date">
       <button class="panel-add-btn" onclick="addDebt()">Aggiungi voce</button>
     </div>
+    <button class="pdf-btn" onclick="printPDF()">🖨️ Stampa riepilogo PDF</button>
     <div class="ded-toggle" onclick="toggleDed()">
       <span class="ded-toggle-label">Da sottrarre</span>
       <span class="ded-toggle-amt" id="ded-total-label">−0,00€</span>
@@ -189,6 +197,10 @@ body.panel-open{overflow:hidden}
   </div>
 </div>
 <button class="add-fab" onclick="openAddPerson()">+</button>
+
+<!-- HIDDEN PDF CONTENT -->
+<div id="pdf-content" style="display:none"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -197,25 +209,16 @@ const app=initializeApp(firebaseConfig);const db=getDatabase(app);const dbRef=re
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
 let D={persons:[]},activePi=-1,addDir="receive",editingDi=-1,editDir="receive";
 
-// Theme
 let isLight=localStorage.getItem("theme")==="light";
 function applyTheme(){document.body.classList.toggle("light",isLight);document.getElementById("theme-btn").textContent=isLight?"🌙":"☀️";}
 window.toggleTheme=function(){isLight=!isLight;localStorage.setItem("theme",isLight?"light":"dark");applyTheme();};
 applyTheme();
 
-// Date helpers
 function todayStr(){return new Date().toISOString().slice(0,10);}
-function fmtDate(s){
-  if(!s)return"";
-  const [y,m,d]=s.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-// Scroll lock
+function fmtDate(s){if(!s)return"";const[y,m,d]=s.split("-");return`${d}/${m}/${y}`;}
 function lockScroll(){document.body.classList.add("panel-open");}
 function unlockScroll(){document.body.classList.remove("panel-open");}
 
-// Swipe down
 const panel=document.getElementById("panel");
 const handleArea=document.getElementById("panel-handle-area");
 let dragStartY=0,dragCurrentY=0,isDragging=false;
@@ -254,17 +257,13 @@ function openPanel(pi){
   activePi=pi;addDir="receive";editingDi=-1;
   renderPanel();
   document.getElementById("panel-overlay").classList.add("open");
-  panel.classList.add("open");panel.style.transform="";
-  lockScroll();
-  // set today as default date
+  panel.classList.add("open");panel.style.transform="";lockScroll();
   document.getElementById("new-date").value=todayStr();
   document.getElementById("del-person-btn").onclick=()=>{if(confirm("Eliminare "+D.persons[pi].name+"?")){D.persons.splice(pi,1);saveAll();closePanel();}};
 }
 window._openPanel=openPanel;
-
 function closePanel(){document.getElementById("panel-overlay").classList.remove("open");panel.classList.remove("open");panel.style.transform="";unlockScroll();activePi=-1;editingDi=-1;}
 window.closePanel=closePanel;
-
 function setAddDir(dir){addDir=dir;document.getElementById("add-dir-give").className="dir-mini-btn"+(dir==="give"?" active-give":"");document.getElementById("add-dir-receive").className="dir-mini-btn"+(dir==="receive"?" active-receive":"");}
 window.setAddDir=setAddDir;
 function setEditDir(dir){editDir=dir;document.getElementById("edit-dir-give").className="edit-dir-btn"+(dir==="give"?" active-give":"");document.getElementById("edit-dir-receive").className="edit-dir-btn"+(dir==="receive"?" active-receive":"");}
@@ -281,89 +280,93 @@ function renderPanel(){
   else if(net<0){dirEl.textContent="Gli devo dare";dirEl.className="panel-direction give";}
   else{dirEl.textContent="Pari";dirEl.className="panel-direction";}
   const ne=document.getElementById("panel-net");ne.textContent=fmt(Math.abs(net));ne.className="panel-net "+(net===0?"zero":net>0?"receive":"give");
-  document.getElementById("sum-receive").textContent=fmt(receive);
-  document.getElementById("sum-give").textContent=fmt(give);
-  document.getElementById("sum-net").textContent=fmt(net);
-  document.getElementById("ded-total-label").textContent="−"+fmt(ded);
+  document.getElementById("sum-receive").textContent=fmt(receive);document.getElementById("sum-give").textContent=fmt(give);document.getElementById("sum-net").textContent=fmt(net);document.getElementById("ded-total-label").textContent="−"+fmt(ded);
   setAddDir(addDir);
-
-  // Sort debts: most recent first
-  const debts=[...(p.debts||[])].map((d,i)=>({...d,_origIdx:i})).sort((a,b)=>{
-    const da=a.date||"0000-00-00", db2=b.date||"0000-00-00";
-    return da<db2?1:da>db2?-1:0;
-  });
-
+  const debts=[...(p.debts||[])].map((d,i)=>({...d,_origIdx:i})).sort((a,b)=>{const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";return da<db2?1:da>db2?-1:0;});
   const dl=document.getElementById("panel-debts");
   if(!debts.length){dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';}
   else{dl.innerHTML=debts.map((d)=>{
     const di=d._origIdx;
-    if(editingDi===di){
-      return`<div class="debt-edit-row">
-        <div class="edit-dir-row">
-          <button class="edit-dir-btn${editDir==="give"?" active-give":""}" id="edit-dir-give" onclick="setEditDir('give')">↑ Devo dare</button>
-          <button class="edit-dir-btn${editDir==="receive"?" active-receive":""}" id="edit-dir-receive" onclick="setEditDir('receive')">↓ Mi devono</button>
-        </div>
-        <div class="edit-row-inputs">
-          <input class="panel-input" id="edit-desc" value="${esc(d.desc)}" placeholder="Descrizione...">
-          <input class="panel-input amt-small" id="edit-amt" type="number" value="${d.amount}" step="0.01" min="0">
-        </div>
-        <input class="date-input" id="edit-date" type="date" value="${d.date||todayStr()}">
-        <div style="display:flex;gap:8px">
-          <button class="edit-save-btn" onclick="saveEdit(${di})">Salva</button>
-          <button class="edit-cancel-btn" onclick="cancelEdit()">Annulla</button>
-        </div>
-      </div>`;
-    }
-    return`<div class="debt-row${d.paid?" paid-row":""}">
-      <div class="debt-check${d.paid?" done":""}" onclick="window._togglePaid(${di})">${d.paid?"✓":""}</div>
-      <div class="debt-text">
-        <div class="debt-desc">${esc(d.desc)}</div>
-        <div class="debt-meta">
-          <span>${fmt(d.amount)}</span>
-          <span class="debt-dir-tag ${d.dir==="give"?"tag-give":"tag-receive"}">${d.dir==="give"?"devo dare":"mi deve"}</span>
-        </div>
-        ${d.date?'<div class="debt-date">'+fmtDate(d.date)+'</div>':""}
-      </div>
-      <div class="debt-actions">
-        <button class="debt-action-btn" onclick="startEdit(${di})">✏️</button>
-        <button class="debt-action-btn" onclick="window._delDebt(${di})">✕</button>
-      </div>
-    </div>`;
+    if(editingDi===di){return`<div class="debt-edit-row"><div class="edit-dir-row"><button class="edit-dir-btn${editDir==="give"?" active-give":""}" id="edit-dir-give" onclick="setEditDir('give')">↑ Devo dare</button><button class="edit-dir-btn${editDir==="receive"?" active-receive":""}" id="edit-dir-receive" onclick="setEditDir('receive')">↓ Mi devono</button></div><div class="edit-row-inputs"><input class="panel-input" id="edit-desc" value="${esc(d.desc)}" placeholder="Descrizione..."><input class="panel-input amt-small" id="edit-amt" type="number" value="${d.amount}" step="0.01" min="0"></div><input class="date-input" id="edit-date" type="date" value="${d.date||todayStr()}"><div style="display:flex;gap:8px"><button class="edit-save-btn" onclick="saveEdit(${di})">Salva</button><button class="edit-cancel-btn" onclick="cancelEdit()">Annulla</button></div></div>`;}
+    return`<div class="debt-row${d.paid?" paid-row":""}"><div class="debt-check${d.paid?" done":""}" onclick="window._togglePaid(${di})">${d.paid?"✓":""}</div><div class="debt-text"><div class="debt-desc">${esc(d.desc)}</div><div class="debt-meta"><span>${fmt(d.amount)}</span><span class="debt-dir-tag ${d.dir==="give"?"tag-give":"tag-receive"}">${d.dir==="give"?"devo dare":"mi deve"}</span></div>${d.date?`<div class="debt-date">${fmtDate(d.date)}</div>`:""}</div><div class="debt-actions"><button class="debt-action-btn" onclick="startEdit(${di})">✏️</button><button class="debt-action-btn" onclick="window._delDebt(${di})">✕</button></div></div>`;
   }).join("");}
-
-  const deds=p.deductions||[];
-  document.getElementById("ded-list").innerHTML=!deds.length?"":deds.map((d,di)=>`<div class="ded-row"><div class="ded-name">${esc(d.label)}</div><div class="ded-amt">−${fmt(d.amount)}</div><button class="debt-action-btn" onclick="window._delDed(${di})">✕</button></div>`).join("");
+  const deds=p.deductions||[];document.getElementById("ded-list").innerHTML=!deds.length?"":deds.map((d,di)=>`<div class="ded-row"><div class="ded-name">${esc(d.label)}</div><div class="ded-amt">−${fmt(d.amount)}</div><button class="debt-action-btn" onclick="window._delDed(${di})">✕</button></div>`).join("");
   document.getElementById("ded-section").style.display=p.showDed?"block":"none";
 }
 
+// PDF PRINT
+window.printPDF=function(){
+  if(activePi<0)return;
+  const p=D.persons[activePi];
+  const{receive,give,ded,net}=calcPerson(p);
+  const today=fmtDate(todayStr());
+  const debts=[...(p.debts||[])].map((d,i)=>({...d,_origIdx:i})).sort((a,b)=>{const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";return da<db2?1:da>db2?-1:0;});
+  const openDebts=debts.filter(d=>!d.paid);
+  const paidDebts=debts.filter(d=>d.paid);
+  const deds=p.deductions||[];
+
+  const rows=(arr,showPaid)=>arr.map(d=>`
+    <tr style="border-bottom:1px solid #eee;${showPaid?"opacity:.5":""}">
+      <td style="padding:8px 6px;font-size:13px">${esc(d.desc)}</td>
+      <td style="padding:8px 6px;font-size:11px;color:#888">${fmtDate(d.date||"")}</td>
+      <td style="padding:8px 6px;font-size:12px;color:${d.dir==="give"?"#ff3b30":"#34c759"};text-align:center">${d.dir==="give"?"↑ devo dare":"↓ mi deve"}</td>
+      <td style="padding:8px 6px;font-size:13px;font-weight:600;text-align:right">${fmt(d.amount)}</td>
+    </tr>`).join("");
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Riepilogo ${esc(p.name)}</title>
+  <style>
+    body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;max-width:680px;margin:40px auto;padding:0 24px}
+    h1{font-size:26px;font-weight:700;margin-bottom:4px}
+    .sub{font-size:13px;color:#888;margin-bottom:32px}
+    .totals{display:flex;gap:16px;margin-bottom:32px}
+    .tot-card{flex:1;border:1px solid #eee;border-radius:10px;padding:16px}
+    .tot-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+    .tot-val{font-size:22px;font-weight:700}
+    .tot-val.green{color:#34c759}.tot-val.red{color:#ff3b30}.tot-val.black{color:#111}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px}
+    th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;padding:6px 6px 10px;border-bottom:2px solid #eee}
+    .section-title{font-size:14px;font-weight:700;margin:24px 0 8px;color:#444;text-transform:uppercase;letter-spacing:.5px}
+    .ded-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
+    .footer{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between}
+  </style>
+  </head><body>
+  <h1>Riepilogo — ${esc(p.name)}</h1>
+  <div class="sub">Generato il ${today}</div>
+  <div class="totals">
+    <div class="tot-card"><div class="tot-label">Mi deve dare</div><div class="tot-val green">${fmt(receive)}</div></div>
+    <div class="tot-card"><div class="tot-label">Devo dare</div><div class="tot-val red">${fmt(give)}</div></div>
+    ${deds.length?`<div class="tot-card"><div class="tot-label">Sconti</div><div class="tot-val" style="color:#888">−${fmt(ded)}</div></div>`:""}
+    <div class="tot-card"><div class="tot-label">Totale netto</div><div class="tot-val ${net>=0?"green":"red"}">${fmt(net)}</div></div>
+  </div>
+  ${openDebts.length?`
+  <div class="section-title">Voci aperte (${openDebts.length})</div>
+  <table><thead><tr><th>Descrizione</th><th>Data</th><th>Tipo</th><th style="text-align:right">Importo</th></tr></thead>
+  <tbody>${rows(openDebts,false)}</tbody></table>`:""}
+  ${deds.length?`
+  <div class="section-title">Da sottrarre</div>
+  ${deds.map(d=>`<div class="ded-row"><span>${esc(d.label)}</span><span style="color:#34c759">−${fmt(d.amount)}</span></div>`).join("")}`:""}
+  ${paidDebts.length?`
+  <div class="section-title">Voci saldate (${paidDebts.length})</div>
+  <table><thead><tr><th>Descrizione</th><th>Data</th><th>Tipo</th><th style="text-align:right">Importo</th></tr></thead>
+  <tbody>${rows(paidDebts,true)}</tbody></table>`:""}
+  <div class="footer"><span>Debiti App</span><span>${esc(p.name)} · ${today}</span></div>
+  </body></html>`;
+
+  const w=window.open("","_blank","width=750,height=900");
+  w.document.write(html);
+  w.document.close();
+  w.onload=()=>{ w.focus(); w.print(); };
+};
+
 window.startEdit=function(di){editingDi=di;editDir=D.persons[activePi].debts[di].dir;renderPanel();setTimeout(()=>document.getElementById("edit-desc")?.focus(),50);};
 window.cancelEdit=function(){editingDi=-1;renderPanel();};
-window.saveEdit=function(di){
-  const desc=document.getElementById("edit-desc").value.trim();
-  const amt=parseFloat(document.getElementById("edit-amt").value);
-  const date=document.getElementById("edit-date").value;
-  if(!desc||isNaN(amt)||amt<=0)return;
-  D.persons[activePi].debts[di]={...D.persons[activePi].debts[di],desc,amount:amt,dir:editDir,date};
-  editingDi=-1;saveAll();renderPanel();renderList();
-};
+window.saveEdit=function(di){const desc=document.getElementById("edit-desc").value.trim();const amt=parseFloat(document.getElementById("edit-amt").value);const date=document.getElementById("edit-date").value;if(!desc||isNaN(amt)||amt<=0)return;D.persons[activePi].debts[di]={...D.persons[activePi].debts[di],desc,amount:amt,dir:editDir,date};editingDi=-1;saveAll();renderPanel();renderList();};
 window._togglePaid=function(di){D.persons[activePi].debts[di].paid=!D.persons[activePi].debts[di].paid;saveAll();renderPanel();renderList();};
 window._delDebt=function(di){D.persons[activePi].debts.splice(di,1);editingDi=-1;saveAll();renderPanel();renderList();};
 window._delDed=function(di){D.persons[activePi].deductions.splice(di,1);saveAll();renderPanel();renderList();};
 window.toggleDed=function(){if(activePi<0)return;D.persons[activePi].showDed=!D.persons[activePi].showDed;saveAll();renderPanel();};
-window.addDebt=function(){
-  if(activePi<0)return;
-  const desc=document.getElementById("new-desc").value.trim();
-  const amt=parseFloat(document.getElementById("new-amt").value);
-  const date=document.getElementById("new-date").value||todayStr();
-  if(!desc||isNaN(amt)||amt<=0)return;
-  if(!D.persons[activePi].debts)D.persons[activePi].debts=[];
-  D.persons[activePi].debts.push({desc,amount:amt,paid:false,dir:addDir,date});
-  document.getElementById("new-desc").value="";
-  document.getElementById("new-amt").value="";
-  document.getElementById("new-date").value=todayStr();
-  saveAll();renderPanel();renderList();
-  document.getElementById("new-desc").focus();
-};
+window.addDebt=function(){if(activePi<0)return;const desc=document.getElementById("new-desc").value.trim();const amt=parseFloat(document.getElementById("new-amt").value);const date=document.getElementById("new-date").value||todayStr();if(!desc||isNaN(amt)||amt<=0)return;if(!D.persons[activePi].debts)D.persons[activePi].debts=[];D.persons[activePi].debts.push({desc,amount:amt,paid:false,dir:addDir,date});document.getElementById("new-desc").value="";document.getElementById("new-amt").value="";document.getElementById("new-date").value=todayStr();saveAll();renderPanel();renderList();document.getElementById("new-desc").focus();};
 window.addDed=function(){if(activePi<0)return;const label=document.getElementById("new-dl").value.trim();const amt=parseFloat(document.getElementById("new-da").value);if(!label||isNaN(amt)||amt<=0)return;if(!D.persons[activePi].deductions)D.persons[activePi].deductions=[];D.persons[activePi].deductions.push({label,amount:amt});document.getElementById("new-dl").value="";document.getElementById("new-da").value="";saveAll();renderPanel();renderList();};
 window.openAddPerson=function(){document.getElementById("modal-overlay").classList.add("open");setTimeout(()=>document.getElementById("modal-name").focus(),150);};
 window.closeModal=function(){document.getElementById("modal-overlay").classList.remove("open");document.getElementById("modal-name").value="";};
