@@ -130,7 +130,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v9</span>
+    <span class="version-badge">v10</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -269,7 +269,23 @@ function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 function saveAll(){setSyncing();set(dbRef,D).then(setSynced).catch(()=>setSynced());}
 function calcPerson(p){const debts=p.debts||[];const receive=debts.filter(d=>!d.paid&&d.dir==="receive").reduce((s,d)=>s+d.amount,0);const give=debts.filter(d=>!d.paid&&d.dir==="give").reduce((s,d)=>s+d.amount,0);const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);return{receive,give,ded,net:receive-give-ded};}
 
-onValue(dbRef,snapshot=>{const val=snapshot.val();D=(val&&val.persons)?val:{persons:[]};setSynced();renderList();if(activePi>=0&&activePi<D.persons.length)renderPanel();});
+// Connection timeout
+const connTimeout = setTimeout(()=>{
+  document.getElementById("list").innerHTML='<div style="padding:24px;text-align:center"><div style="font-size:13px;color:#ff453a;margin-bottom:12px">⚠️ Impossibile connettersi a Firebase</div><div style="font-size:12px;color:#636366;margin-bottom:16px">Controlla la connessione internet</div><button onclick="location.reload()" style="background:#fff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Ricarica</button></div>';
+  document.getElementById("sync-dot").className="sync-dot";
+}, 8000);
+
+onValue(dbRef, snapshot=>{
+  clearTimeout(connTimeout);
+  const val=snapshot.val();
+  D=(val&&val.persons)?val:{persons:[]};
+  setSynced();renderList();
+  if(activePi>=0&&activePi<D.persons.length)renderPanel();
+}, error=>{
+  clearTimeout(connTimeout);
+  document.getElementById("list").innerHTML='<div style="padding:24px;text-align:center"><div style="font-size:13px;color:#ff453a;margin-bottom:8px">⚠️ Errore Firebase</div><div style="font-size:11px;color:#636366;margin-bottom:16px;font-family:monospace">'+error.message+'</div><button onclick="location.reload()" style="background:#fff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Ricarica</button></div>';
+  console.error("Firebase error:", error);
+});
 
 function renderList(){
   const list=document.getElementById("list");
