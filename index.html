@@ -130,7 +130,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v10</span>
+    <span class="version-badge">v11</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -233,6 +233,7 @@ async function supaSave(data){
   if(!r.ok) throw new Error("HTTP "+r.status);
 }
 // ─────────────────────────────────────────────────────────────────
+
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
 let D={persons:[]},activePi=-1,addDir="receive",editingDi=-1,editDir="receive";
 
@@ -265,7 +266,7 @@ window.toggleTheme=function(){isLight=!isLight;localStorage.setItem("theme",isLi
 applyTheme();
 
 function todayStr(){return new Date().toISOString().slice(0,10);}
-function fmtDate(s){if(!s)return"";const[y,m,d]=s.split("-");return`${d}/${m}/${y}`;}
+function fmtDate(s){if(!s)return "";const[y,m,d]=s.split("-");return d+"/"+m+"/"+y;}
 function lockScroll(){document.body.classList.add("panel-open");}
 function unlockScroll(){document.body.classList.remove("panel-open");}
 
@@ -273,7 +274,7 @@ const panel=document.getElementById("panel");
 const handleArea=document.getElementById("panel-handle-area");
 let dragStartY=0,dragCurrentY=0,isDragging=false;
 handleArea.addEventListener("touchstart",e=>{isDragging=true;dragStartY=e.touches[0].clientY;panel.style.transition="none";},{passive:true});
-handleArea.addEventListener("touchmove",e=>{if(!isDragging)return;dragCurrentY=Math.max(0,e.touches[0].clientY-dragStartY);panel.style.transform=`translateY(${dragCurrentY}px)`;},{passive:true});
+handleArea.addEventListener("touchmove",e=>{if(!isDragging)return;dragCurrentY=Math.max(0,e.touches[0].clientY-dragStartY);panel.style.transform="translateY("+dragCurrentY+"px)";},{passive:true});
 handleArea.addEventListener("touchend",()=>{if(!isDragging)return;isDragging=false;panel.style.transition="transform .35s cubic-bezier(.32,0,.67,0)";if(dragCurrentY>100){closePanel();}else{panel.style.transform="translateY(0)";}dragCurrentY=0;});
 
 const syncDot=document.getElementById("sync-dot");
@@ -283,7 +284,13 @@ function fmt(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximum
 function fmtN(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function saveAll(){setSyncing();supaSave(D).then(setSynced).catch(e=>{console.error("Save error",e);setSynced();});}
-function calcPerson(p){const debts=p.debts||[];const receive=debts.filter(d=>!d.paid&&d.dir==="receive").reduce((s,d)=>s+d.amount,0);const give=debts.filter(d=>!d.paid&&d.dir==="give").reduce((s,d)=>s+d.amount,0);const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);return{receive,give,ded,net:receive-give-ded};}
+function calcPerson(p){
+  const debts=p.debts||[];
+  const receive=debts.filter(d=>!d.paid&&d.dir==="receive").reduce((s,d)=>s+d.amount,0);
+  const give=debts.filter(d=>!d.paid&&d.dir==="give").reduce((s,d)=>s+d.amount,0);
+  const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);
+  return{receive,give,ded,net:receive-give-ded};
+}
 
 // Load from Supabase on start
 supaLoad().then(val=>{
@@ -303,10 +310,10 @@ function renderList(){
     const{net}=calcPerson(p);totalNet+=net;
     const init=p.name.slice(0,2).toUpperCase();
     const unpaid=(p.debts||[]).filter(d=>!d.paid).length;
-    const voci=unpaid===1?"1 voce aperta":`${unpaid} voci aperte`;
+    const voci=unpaid===1?"1 voce aperta":unpaid+" voci aperte";
     const amtClass=net===0?"zero":net>0?"receive":"give";
     const badge=net===0?"":net>0?'<span class="person-badge badge-receive">deve a me</span>':'<span class="person-badge badge-give">gli devo</span>';
-    return`<div class="person-row" onclick="window._openPanel(${pi})"><div class="person-avatar" style="background:${p.color}">${init}</div><div class="person-info"><div class="person-name-row">${esc(p.name)} ${badge}</div><div class="person-sub">${voci}</div></div><div class="person-amount ${amtClass}">${fmt(Math.abs(net))}</div><span class="chevron-r">›</span></div><div class="divider"></div>`;
+    return '<div class="person-row" onclick="window._openPanel('+pi+')"><div class="person-avatar" style="background:'+p.color+'">'+init+'</div><div class="person-info"><div class="person-name-row">'+esc(p.name)+' '+badge+'</div><div class="person-sub">'+voci+'</div></div><div class="person-amount '+amtClass+'">'+fmt(Math.abs(net))+'</div><span class="chevron-r">›</span></div><div class="divider"></div>';
   }).join("");
   document.getElementById("hero-num").textContent=fmtN(Math.abs(totalNet));
 }
@@ -317,19 +324,39 @@ function openPanel(pi){
   document.getElementById("panel-overlay").classList.add("open");
   panel.classList.add("open");panel.style.transform="";lockScroll();
   document.getElementById("new-date").value=todayStr();
-  document.getElementById("del-person-btn").onclick=()=>{if(confirm("Eliminare "+D.persons[pi].name+"?")){D.persons.splice(pi,1);saveAll();closePanel();}};
+  document.getElementById("del-person-btn").onclick=function(){
+    if(confirm("Eliminare "+D.persons[pi].name+"?")){
+      D.persons.splice(pi,1);saveAll();closePanel();
+    }
+  };
 }
 window._openPanel=openPanel;
-function closePanel(){document.getElementById("panel-overlay").classList.remove("open");panel.classList.remove("open");panel.style.transform="";unlockScroll();activePi=-1;editingDi=-1;}
+
+function closePanel(){
+  document.getElementById("panel-overlay").classList.remove("open");
+  panel.classList.remove("open");panel.style.transform="";unlockScroll();
+  activePi=-1;editingDi=-1;
+}
 window.closePanel=closePanel;
-function setAddDir(dir){addDir=dir;document.getElementById("add-dir-give").className="dir-mini-btn"+(dir==="give"?" active-give":"");document.getElementById("add-dir-receive").className="dir-mini-btn"+(dir==="receive"?" active-receive":"");}
+
+function setAddDir(dir){
+  addDir=dir;
+  document.getElementById("add-dir-give").className="dir-mini-btn"+(dir==="give"?" active-give":"");
+  document.getElementById("add-dir-receive").className="dir-mini-btn"+(dir==="receive"?" active-receive":"");
+}
 window.setAddDir=setAddDir;
-function setEditDir(dir){editDir=dir;document.getElementById("edit-dir-give").className="edit-dir-btn"+(dir==="give"?" active-give":"");document.getElementById("edit-dir-receive").className="edit-dir-btn"+(dir==="receive"?" active-receive":"");}
+
+function setEditDir(dir){
+  editDir=dir;
+  document.getElementById("edit-dir-give").className="edit-dir-btn"+(dir==="give"?" active-give":"");
+  document.getElementById("edit-dir-receive").className="edit-dir-btn"+(dir==="receive"?" active-receive":"");
+}
 window.setEditDir=setEditDir;
 
 function renderPanel(){
   if(activePi<0||activePi>=D.persons.length)return;
-  const p=D.persons[activePi];const{receive,give,ded,net}=calcPerson(p);
+  const p=D.persons[activePi];
+  const{receive,give,ded,net}=calcPerson(p);
   document.getElementById("panel-avatar").style.background=p.color;
   document.getElementById("panel-avatar").textContent=p.name.slice(0,2).toUpperCase();
   document.getElementById("panel-name").textContent=p.name;
@@ -337,27 +364,170 @@ function renderPanel(){
   if(net>0){dirEl.textContent="Mi deve dare";dirEl.className="panel-direction receive";}
   else if(net<0){dirEl.textContent="Gli devo dare";dirEl.className="panel-direction give";}
   else{dirEl.textContent="Pari";dirEl.className="panel-direction";}
-  const ne=document.getElementById("panel-net");ne.textContent=fmt(Math.abs(net));ne.className="panel-net "+(net===0?"zero":net>0?"receive":"give");
-  document.getElementById("sum-receive").textContent=fmt(receive);document.getElementById("sum-give").textContent=fmt(give);document.getElementById("sum-net").textContent=fmt(net);document.getElementById("ded-total-label").textContent="−"+fmt(ded);
+  const ne=document.getElementById("panel-net");
+  ne.textContent=fmt(Math.abs(net));
+  ne.className="panel-net "+(net===0?"zero":net>0?"receive":"give");
+  document.getElementById("sum-receive").textContent=fmt(receive);
+  document.getElementById("sum-give").textContent=fmt(give);
+  document.getElementById("sum-net").textContent=fmt(net);
+  document.getElementById("ded-total-label").textContent="−"+fmt(ded);
   setAddDir(addDir);
-  const debts=[...(p.debts||[])].map((d,i)=>({...d,_origIdx:i})).sort((a,b)=>{const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";return da<db2?1:da>db2?-1:0;});
+
+  const debts=[...(p.debts||[])].map((d,i)=>Object.assign({},d,{_origIdx:i})).sort(function(a,b){
+    const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";
+    return da<db2?1:da>db2?-1:0;
+  });
   const openDebtsPanel=debts.filter(d=>!d.paid);
-  const paidDebtsPanel=debts.filter(d=>d.paid);
   const showHistory=p.showHistory||false;
   const dl=document.getElementById("panel-debts");
-  if(!debts.length){dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';}
-  else{
+
+  if(!debts.length){
+    dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';
+  } else {
     const visibleDebts=showHistory?debts:openDebtsPanel;
-    if(!visibleDebts.length && !openDebtsPanel.length){dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce ancora.</div>';
+    if(!visibleDebts.length){
+      dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce aperta. <span style="color:var(--text3);cursor:pointer;text-decoration:underline" onclick="toggleHistory()">Mostra storico</span></div>';
     } else {
-    dl.innerHTML=(visibleDebts.length?visibleDebts:[]).map((d)=>{
-    const di=d._origIdx;
-    if(editingDi===di){return`<div class="debt-edit-row"><div class="edit-dir-row"><button class="edit-dir-btn${editDir==="give"?" active-give":""}" id="edit-dir-give" onclick="setEditDir('give')">↑ Devo dare</button><button class="edit-dir-btn${editDir==="receive"?" active-receive":""}" id="edit-dir-receive" onclick="setEditDir('receive')">↓ Mi devono</button></div><div class="edit-row-inputs"><input class="panel-input" id="edit-desc" value="${esc(d.desc)}" placeholder="Descrizione..."><input class="panel-input amt-small" id="edit-amt" type="number" value="${d.amount}" step="0.01" min="0"></div><input class="date-input" id="edit-date" type="date" value="${d.date||todayStr()}"><div style="display:flex;gap:8px"><button class="edit-save-btn" onclick="saveEdit(${di})">Salva</button><button class="edit-cancel-btn" onclick="cancelEdit()">Annulla</button></div></div>`;}
-    return`<div class="debt-row${d.paid?" paid-row":""}"><div class="debt-check${d.paid?" done":""}" onclick="window._togglePaid(${di})">${d.paid?"✓":""}</div><div class="debt-text"><div class="debt-desc">${esc(d.desc)}</div><div class="debt-meta"><span>${fmt(d.amount)}</span><span class="debt-dir-tag ${d.dir==="give"?"tag-give":"tag-receive"}">${d.dir==="give"?"devo dare":"mi deve"}</span></div>${d.date?`<div class="debt-date">${fmtDate(d.date)}</div>`:""}</div><div class="debt-actions"><button class="debt-action-btn" onclick="startEdit(${di})">✏️</button><button class="debt-action-btn" onclick="window._delDebt(${di})">✕</button></div></div>`;
-  }).join("");}
-  const deds=p.deductions||[];document.getElementById("ded-list").innerHTML=!deds.length?"":deds.map((d,di)=>`<div class="ded-row"><div class="ded-name">${esc(d.label)}</div><div class="ded-amt">−${fmt(d.amount)}</div><button class="debt-action-btn" onclick="window._delDed(${di})">✕</button></div>`).join("");
+      dl.innerHTML=visibleDebts.map(function(d){
+        const di=d._origIdx;
+        if(editingDi===di){
+          var giveClass="edit-dir-btn"+(editDir==="give"?" active-give":"");
+          var recClass="edit-dir-btn"+(editDir==="receive"?" active-receive":"");
+          return '<div class="debt-edit-row">'+
+            '<div class="edit-dir-row">'+
+            '<button class="'+giveClass+'" id="edit-dir-give" onclick="setEditDir(\'give\')">↑ Devo dare</button>'+
+            '<button class="'+recClass+'" id="edit-dir-receive" onclick="setEditDir(\'receive\')">↓ Mi devono</button>'+
+            '</div>'+
+            '<div class="edit-row-inputs">'+
+            '<input class="panel-input" id="edit-desc" value="'+esc(d.desc)+'" placeholder="Descrizione...">'+
+            '<input class="panel-input amt-small" id="edit-amt" type="number" value="'+d.amount+'" step="0.01" min="0">'+
+            '</div>'+
+            '<input class="date-input" id="edit-date" type="date" value="'+(d.date||todayStr())+'">'+
+            '<div style="display:flex;gap:8px">'+
+            '<button class="edit-save-btn" onclick="saveEdit('+di+')">Salva</button>'+
+            '<button class="edit-cancel-btn" onclick="cancelEdit()">Annulla</button>'+
+            '</div></div>';
+        }
+        return '<div class="debt-row'+(d.paid?" paid-row":"")+'"><div class="debt-check'+(d.paid?" done":"")+ '" onclick="window._togglePaid('+di+')">'+(d.paid?"✓":"")+'</div><div class="debt-text"><div class="debt-desc">'+esc(d.desc)+'</div><div class="debt-meta"><span>'+fmt(d.amount)+'</span><span class="debt-dir-tag '+(d.dir==="give"?"tag-give":"tag-receive")+'">'+(d.dir==="give"?"devo dare":"mi deve")+'</span></div>'+(d.date?'<div class="debt-date">'+fmtDate(d.date)+'</div>':"")+'</div><div class="debt-actions"><button class="debt-action-btn" onclick="startEdit('+di+')">✏️</button><button class="debt-action-btn" onclick="window._delDebt('+di+')">✕</button></div></div>';
+      }).join("");
+    }
+  }
+
+  const deds=p.deductions||[];
+  document.getElementById("ded-list").innerHTML=!deds.length?"":deds.map(function(d,di){
+    return '<div class="ded-row"><div class="ded-name">'+esc(d.label)+'</div><div class="ded-amt">−'+fmt(d.amount)+'</div><button class="debt-action-btn" onclick="window._delDed('+di+')">✕</button></div>';
+  }).join("");
   document.getElementById("ded-section").style.display=p.showDed?"block":"none";
 }
+
+// Debt actions
+window._togglePaid=function(di){
+  if(activePi<0)return;
+  D.persons[activePi].debts[di].paid=!D.persons[activePi].debts[di].paid;
+  saveAll();renderPanel();renderList();
+};
+window._delDebt=function(di){
+  if(activePi<0)return;
+  if(!confirm("Eliminare questa voce?"))return;
+  D.persons[activePi].debts.splice(di,1);
+  saveAll();renderPanel();renderList();
+};
+
+function startEdit(di){
+  if(activePi<0)return;
+  editingDi=di;
+  editDir=D.persons[activePi].debts[di].dir;
+  renderPanel();
+  setTimeout(function(){
+    const el=document.getElementById("edit-desc");
+    if(el)el.focus();
+  },50);
+}
+window.startEdit=startEdit;
+
+function saveEdit(di){
+  if(activePi<0)return;
+  const desc=document.getElementById("edit-desc").value.trim();
+  const amt=parseFloat(document.getElementById("edit-amt").value);
+  const date=document.getElementById("edit-date").value;
+  if(!desc||isNaN(amt)||amt<=0)return;
+  D.persons[activePi].debts[di].desc=desc;
+  D.persons[activePi].debts[di].amount=amt;
+  D.persons[activePi].debts[di].dir=editDir;
+  D.persons[activePi].debts[di].date=date;
+  editingDi=-1;
+  saveAll();renderPanel();renderList();
+}
+window.saveEdit=saveEdit;
+
+function cancelEdit(){editingDi=-1;renderPanel();}
+window.cancelEdit=cancelEdit;
+
+function addDebt(){
+  if(activePi<0)return;
+  const desc=document.getElementById("new-desc").value.trim();
+  const amt=parseFloat(document.getElementById("new-amt").value);
+  const date=document.getElementById("new-date").value;
+  if(!desc||isNaN(amt)||amt<=0)return;
+  if(!D.persons[activePi].debts)D.persons[activePi].debts=[];
+  D.persons[activePi].debts.push({desc,amount:amt,dir:addDir,date,paid:false});
+  document.getElementById("new-desc").value="";
+  document.getElementById("new-amt").value="";
+  document.getElementById("new-date").value=todayStr();
+  saveAll();renderPanel();renderList();
+}
+window.addDebt=addDebt;
+
+// Deductions
+window.toggleDed=function(){
+  if(activePi<0)return;
+  D.persons[activePi].showDed=!D.persons[activePi].showDed;
+  renderPanel();
+};
+
+function addDed(){
+  if(activePi<0)return;
+  const label=document.getElementById("new-dl").value.trim();
+  const amt=parseFloat(document.getElementById("new-da").value);
+  if(!label||isNaN(amt)||amt<=0)return;
+  if(!D.persons[activePi].deductions)D.persons[activePi].deductions=[];
+  D.persons[activePi].deductions.push({label,amount:amt});
+  document.getElementById("new-dl").value="";
+  document.getElementById("new-da").value="";
+  saveAll();renderPanel();renderList();
+}
+window.addDed=addDed;
+
+window._delDed=function(di){
+  if(activePi<0)return;
+  D.persons[activePi].deductions.splice(di,1);
+  saveAll();renderPanel();renderList();
+};
+
+function toggleHistory(){
+  if(activePi<0)return;
+  D.persons[activePi].showHistory=!D.persons[activePi].showHistory;
+  renderPanel();
+}
+window.toggleHistory=toggleHistory;
+
+// Add person modal
+window.openAddPerson=function(){
+  document.getElementById("modal-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("modal-name").focus(),150);
+};
+window.closeModal=function(){
+  document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("modal-name").value="";
+};
+window.confirmAddPerson=function(){
+  const name=document.getElementById("modal-name").value.trim();
+  if(!name)return;
+  const color=COLORS[D.persons.length%COLORS.length];
+  D.persons.push({name,color,debts:[],deductions:[],showDed:false});
+  saveAll();renderList();closeModal();
+};
+document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)window.closeModal();});
 
 // PDF PRINT
 window.printPDF=function(){
@@ -365,180 +535,113 @@ window.printPDF=function(){
   const p=D.persons[activePi];
   const{receive,give,ded,net}=calcPerson(p);
   const today=fmtDate(todayStr());
-  const debts=[...(p.debts||[])].map((d,i)=>({...d,_origIdx:i})).sort((a,b)=>{const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";return da<db2?1:da>db2?-1:0;});
+  const debts=[...(p.debts||[])].map((d,i)=>Object.assign({},d,{_origIdx:i})).sort(function(a,b){
+    const da=a.date||"0000-00-00",db2=b.date||"0000-00-00";return da<db2?1:da>db2?-1:0;
+  });
   const openDebts=debts.filter(d=>!d.paid);
   const paidDebts=debts.filter(d=>d.paid);
   const deds=p.deductions||[];
-  const sentenceText = net>0
-    ? `${p.name} deve a ${myName}: ${fmt(Math.abs(net))}`
+  const sentenceText=net>0
+    ? p.name+" deve a "+myName+": "+fmt(Math.abs(net))
     : net<0
-    ? `${myName} deve a ${p.name}: ${fmt(Math.abs(net))}`
-    : `${myName} e ${p.name} sono pari`;
+    ? myName+" deve a "+p.name+": "+fmt(Math.abs(net))
+    : myName+" e "+p.name+" sono pari";
 
-  // Load jsPDF then generate
   const script=document.createElement("script");
   script.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
   script.onload=function(){
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-    const W=210, L=16, R=194;
+    const W=210,L=16,R=194;
     let y=20;
-
     function checkPage(){if(y>272){doc.addPage();y=18;}}
-
-    // Header bar
-    doc.setFillColor(15,15,15);
-    doc.rect(0,0,W,13,"F");
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(8);
-    doc.setFont("helvetica","bold");
-    doc.text("DEBITI APP",L,8.5);
-    doc.setFont("helvetica","normal");
+    doc.setFillColor(15,15,15);doc.rect(0,0,W,13,"F");
+    doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont("helvetica","bold");
+    doc.text("DEBITI APP",L,8.5);doc.setFont("helvetica","normal");
     doc.text("Generato il "+today,R,8.5,{align:"right"});
-
     y=24;
-    // Title
-    doc.setTextColor(10,10,10);
-    doc.setFontSize(20);
-    doc.setFont("helvetica","bold");
-    doc.text("Riepilogo - "+p.name,L,y);
-    y+=10;
-
-    // Sentence box
-    doc.setFillColor(240,252,244);
-    doc.setDrawColor(52,199,89);
-    doc.setLineWidth(0.5);
+    doc.setTextColor(10,10,10);doc.setFontSize(20);doc.setFont("helvetica","bold");
+    doc.text("Riepilogo - "+p.name,L,y);y+=10;
+    doc.setFillColor(240,252,244);doc.setDrawColor(52,199,89);doc.setLineWidth(0.5);
     doc.roundedRect(L,y,R-L,11,2,2,"FD");
-    doc.setFontSize(11);
-    doc.setFont("helvetica","bold");
-    doc.setTextColor(20,100,50);
-    doc.text(sentenceText,L+4,y+7.2);
-    y+=18;
-
-    // Totals cards
+    doc.setFontSize(11);doc.setFont("helvetica","bold");doc.setTextColor(20,100,50);
+    doc.text(sentenceText,L+4,y+7.2);y+=18;
     const cards=[
       {label:"MI DEVONO DARE",val:fmt(receive),r:52,g:199,b:89},
       {label:"DEVO DARE",val:fmt(give),r:255,g:59,b:48},
       ...(deds.length?[{label:"SCONTI",val:"-"+fmt(ded),r:142,g:142,b:147}]:[]),
-      {label:"TOTALE NETTO",val:fmt(Math.abs(net)),r:net>=0?52:255,g:net>=0?199:59,b:net>=0?89:48},
+      {label:"TOTALE NETTO",val:fmt(Math.abs(net)),r:net>=0?52:255,g:net>=0?199:59,b:net>=0?89:48}
     ];
-    const gap=4, cw=(R-L-(cards.length-1)*gap)/cards.length;
-    cards.forEach((c,i)=>{
+    const gap=4,cw=(R-L-(cards.length-1)*gap)/cards.length;
+    cards.forEach(function(c,i){
       const cx=L+i*(cw+gap);
-      doc.setFillColor(248,248,248);
-      doc.setDrawColor(225,225,225);
-      doc.setLineWidth(0.2);
+      doc.setFillColor(248,248,248);doc.setDrawColor(225,225,225);doc.setLineWidth(0.2);
       doc.roundedRect(cx,y,cw,17,2,2,"FD");
-      doc.setFontSize(6.5);
-      doc.setFont("helvetica","normal");
-      doc.setTextColor(140,140,140);
+      doc.setFontSize(6.5);doc.setFont("helvetica","normal");doc.setTextColor(140,140,140);
       doc.text(c.label,cx+3,y+5.5);
-      doc.setFontSize(10.5);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(c.r,c.g,c.b);
+      doc.setFontSize(10.5);doc.setFont("helvetica","bold");doc.setTextColor(c.r,c.g,c.b);
       doc.text(c.val,cx+3,y+13);
     });
     y+=24;
-
-    // Table helper
-    function drawSection(title, rows, faded){
+    function drawSection(title,rows,faded){
       if(!rows.length)return;
       checkPage();
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(90,90,90);
-      doc.text(title,L,y);
-      y+=2.5;
-      doc.setDrawColor(200,200,200);
-      doc.setLineWidth(0.3);
-      doc.line(L,y,R,y);
-      y+=4.5;
-
-      // Col headers
-      doc.setFontSize(6.5);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(160,160,160);
-      doc.text("DESCRIZIONE",L,y);
-      doc.text("DATA",L+95,y);
-      doc.text("TIPO",L+118,y);
-      doc.text("IMPORTO",R,y,{align:"right"});
-      y+=2;
-      doc.setDrawColor(220,220,220);
-      doc.line(L,y,R,y);
-      y+=4;
-
-      rows.forEach(d=>{
+      doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(90,90,90);
+      doc.text(title,L,y);y+=2.5;
+      doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(L,y,R,y);y+=4.5;
+      doc.setFontSize(6.5);doc.setFont("helvetica","bold");doc.setTextColor(160,160,160);
+      doc.text("DESCRIZIONE",L,y);doc.text("DATA",L+95,y);doc.text("TIPO",L+118,y);
+      doc.text("IMPORTO",R,y,{align:"right"});y+=2;
+      doc.setDrawColor(220,220,220);doc.line(L,y,R,y);y+=4;
+      rows.forEach(function(d){
         checkPage();
-        const alpha = faded ? 120 : 20;
-        // Description (may wrap)
-        doc.setFontSize(9);
-        doc.setFont("helvetica","normal");
-        doc.setTextColor(alpha,alpha,alpha);
-        const lines=doc.splitTextToSize(d.desc,88);
-        doc.text(lines,L,y);
-        // Date
-        doc.setFontSize(8);
-        doc.setTextColor(faded?160:130,faded?160:130,faded?160:130);
+        const alpha=faded?120:20;
+        doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(alpha,alpha,alpha);
+        const lines=doc.splitTextToSize(d.desc,88);doc.text(lines,L,y);
+        doc.setFontSize(8);doc.setTextColor(faded?160:130,faded?160:130,faded?160:130);
         doc.text(fmtDate(d.date||""),L+95,y);
-        // Type - text only, no symbols
-        const typeLabel = d.dir==="give" ? "devo dare" : "mi deve";
+        const typeLabel=d.dir==="give"?"devo dare":"mi deve";
         const tr=d.dir==="give"?[220,60,50]:[52,180,89];
-        doc.setFont("helvetica","bold");
-        doc.setFontSize(7.5);
-        doc.setTextColor(faded?160:tr[0], faded?160:tr[1], faded?160:tr[2]);
+        doc.setFont("helvetica","bold");doc.setFontSize(7.5);
+        doc.setTextColor(faded?160:tr[0],faded?160:tr[1],faded?160:tr[2]);
         doc.text(typeLabel,L+118,y);
-        // Amount
-        doc.setFontSize(9);
-        doc.setTextColor(alpha,alpha,alpha);
+        doc.setFontSize(9);doc.setTextColor(alpha,alpha,alpha);
         doc.text(fmt(d.amount),R,y,{align:"right"});
-        const rowH=lines.length>1?lines.length*4.5+1:7;
-        y+=rowH;
-        doc.setDrawColor(240,240,240);
-        doc.setLineWidth(0.15);
-        doc.line(L,y-1,R,y-1);
+        const rowH=lines.length>1?lines.length*4.5+1:7;y+=rowH;
+        doc.setDrawColor(240,240,240);doc.setLineWidth(0.15);doc.line(L,y-1,R,y-1);
       });
       y+=5;
     }
-
-    drawSection("VOCI APERTE ("+openDebts.length+")", openDebts, false);
-
-    // Deductions
+    drawSection("VOCI APERTE ("+openDebts.length+")",openDebts,false);
     if(deds.length){
       checkPage();
       doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(90,90,90);
       doc.text("DA SOTTRARRE",L,y);y+=2.5;
       doc.setDrawColor(200,200,200);doc.line(L,y,R,y);y+=5;
-      deds.forEach(d=>{
+      deds.forEach(function(d){
         checkPage();
         doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(40,40,40);
         doc.text(d.label,L,y);
         doc.setFont("helvetica","bold");doc.setTextColor(52,180,89);
-        doc.text("-"+fmt(d.amount),R,y,{align:"right"});
-        y+=7;
+        doc.text("-"+fmt(d.amount),R,y,{align:"right"});y+=7;
       });
       y+=4;
     }
-
-    drawSection("STORICO PAGATI ("+paidDebts.length+")", paidDebts, true);
-
-    // Footer
+    drawSection("STORICO PAGATI ("+paidDebts.length+")",paidDebts,true);
     doc.setFontSize(7.5);doc.setFont("helvetica","normal");doc.setTextColor(190,190,190);
-    doc.text("Debiti App  |  "+p.name+"  |  "+today, W/2, 287, {align:"center"});
-
-    // Output
+    doc.text("Debiti App  |  "+p.name+"  |  "+today,W/2,287,{align:"center"});
     const pdfName="Riepilogo_"+p.name+"_"+todayStr()+".pdf";
     const blob=doc.output("blob");
     const url=URL.createObjectURL(blob);
     if(navigator.share&&navigator.canShare){
       const file=new File([blob],pdfName,{type:"application/pdf"});
-      if(navigator.canShare({files:[file]})){
-        navigator.share({title:"Riepilogo "+p.name,files:[file]}).catch(()=>{});
-        return;
-      }
+      if(navigator.canShare({files:[file]})){navigator.share({title:"Riepilogo "+p.name,files:[file]}).catch(()=>{});return;}
     }
     const a=document.createElement("a");a.href=url;a.download=pdfName;a.click();
   };
-  document.head.appendChild(script)
+  document.head.appendChild(script);
+};
+
 </script>
 </body>
 </html>
