@@ -212,11 +212,27 @@ body.panel-open{overflow:hidden}
 <!-- HIDDEN PDF CONTENT -->
 <div id="pdf-content" style="display:none"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-const firebaseConfig={apiKey:"AIzaSyDA27tRKTQpc-mO22FQ8446JO-a-idrqhA",authDomain:"debiti-d89fe.firebaseapp.com",databaseURL:"https://debiti-d89fe-default-rtdb.europe-west1.firebasedatabase.app",projectId:"debiti-d89fe",storageBucket:"debiti-d89fe.firebasestorage.app",messagingSenderId:"768617640084",appId:"1:768617640084:web:66813df2988b1fb029c481"};
-const app=initializeApp(firebaseConfig);const db=getDatabase(app);const dbRef=ref(db,"debiti");
+<script>
+// ── SUPABASE CONFIG ──────────────────────────────────────────────
+const SUPA_URL = "https://owplxbkptrdmcwziinhg.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93cGx4YmtwdHJkbWN3emlpbmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNTMsImV4cCI6MjA5MTI5NzA1M30.SGI5gk-vZlUuqb9zYyZun4RojD8Dg4axrmBZQzD-tQU";
+const SUPA_HEADERS = {"Content-Type":"application/json","apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+
+async function supaLoad(){
+  const r = await fetch(SUPA_URL+"/rest/v1/debiti?id=eq.main&select=data", {headers: SUPA_HEADERS});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const rows = await r.json();
+  return rows.length ? rows[0].data : {persons:[]};
+}
+async function supaSave(data){
+  const r = await fetch(SUPA_URL+"/rest/v1/debiti?id=eq.main", {
+    method:"PATCH",
+    headers:{...SUPA_HEADERS,"Prefer":"return=minimal"},
+    body: JSON.stringify({data, updated_at: new Date().toISOString()})
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status);
+}
+// ─────────────────────────────────────────────────────────────────
 const COLORS=["#ffd60a","#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#5e5ce6","#ff6961"];
 let D={persons:[]},activePi=-1,addDir="receive",editingDi=-1,editDir="receive";
 
@@ -266,25 +282,17 @@ function setSynced(){syncDot.className="sync-dot ok";}
 function fmt(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2})+"€";}
 function fmtN(n){return n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function saveAll(){setSyncing();set(dbRef,D).then(setSynced).catch(()=>setSynced());}
+function saveAll(){setSyncing();supaSave(D).then(setSynced).catch(e=>{console.error("Save error",e);setSynced();});}
 function calcPerson(p){const debts=p.debts||[];const receive=debts.filter(d=>!d.paid&&d.dir==="receive").reduce((s,d)=>s+d.amount,0);const give=debts.filter(d=>!d.paid&&d.dir==="give").reduce((s,d)=>s+d.amount,0);const ded=(p.deductions||[]).reduce((s,d)=>s+d.amount,0);return{receive,give,ded,net:receive-give-ded};}
 
-// Connection timeout
-const connTimeout = setTimeout(()=>{
-  document.getElementById("list").innerHTML='<div style="padding:24px;text-align:center"><div style="font-size:13px;color:#ff453a;margin-bottom:12px">⚠️ Impossibile connettersi a Firebase</div><div style="font-size:12px;color:#636366;margin-bottom:16px">Controlla la connessione internet</div><button onclick="location.reload()" style="background:#fff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Ricarica</button></div>';
-  document.getElementById("sync-dot").className="sync-dot";
-}, 8000);
-
-onValue(dbRef, snapshot=>{
-  clearTimeout(connTimeout);
-  const val=snapshot.val();
+// Load from Supabase on start
+supaLoad().then(val=>{
   D=(val&&val.persons)?val:{persons:[]};
   setSynced();renderList();
   if(activePi>=0&&activePi<D.persons.length)renderPanel();
-}, error=>{
-  clearTimeout(connTimeout);
-  document.getElementById("list").innerHTML='<div style="padding:24px;text-align:center"><div style="font-size:13px;color:#ff453a;margin-bottom:8px">⚠️ Errore Firebase</div><div style="font-size:11px;color:#636366;margin-bottom:16px;font-family:monospace">'+error.message+'</div><button onclick="location.reload()" style="background:#fff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Ricarica</button></div>';
-  console.error("Firebase error:", error);
+}).catch(error=>{
+  document.getElementById("list").innerHTML='<div style="padding:24px;text-align:center"><div style="font-size:13px;color:#ff453a;margin-bottom:8px">⚠️ Errore connessione</div><div style="font-size:11px;color:#636366;margin-bottom:16px;font-family:monospace">'+error.message+'</div><button onclick="location.reload()" style="background:#fff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Ricarica</button></div>';
+  console.error("Supabase load error:", error);
 });
 
 function renderList(){
