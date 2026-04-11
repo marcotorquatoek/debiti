@@ -130,7 +130,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v12</span>
+    <span class="version-badge">v13</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -378,6 +378,7 @@ function renderPanel(){
     return da<db2?1:da>db2?-1:0;
   });
   const openDebtsPanel=debts.filter(d=>!d.paid);
+  const paidDebts=debts.filter(d=>d.paid);
   const showHistory=p.showHistory||false;
   const dl=document.getElementById("panel-debts");
 
