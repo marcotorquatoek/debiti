@@ -130,7 +130,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v11</span>
+    <span class="version-badge">v12</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -386,7 +386,7 @@ function renderPanel(){
   } else {
     const visibleDebts=showHistory?debts:openDebtsPanel;
     if(!visibleDebts.length){
-      dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce aperta. <span style="color:var(--text3);cursor:pointer;text-decoration:underline" onclick="toggleHistory()">Mostra storico</span></div>';
+      dl.innerHTML='<div style="padding:16px 24px;font-size:14px;color:var(--text4)">Nessuna voce aperta.</div>';
     } else {
       dl.innerHTML=visibleDebts.map(function(d){
         const di=d._origIdx;
@@ -409,7 +409,7 @@ function renderPanel(){
             '</div></div>';
         }
         return '<div class="debt-row'+(d.paid?" paid-row":"")+'"><div class="debt-check'+(d.paid?" done":"")+ '" onclick="window._togglePaid('+di+')">'+(d.paid?"✓":"")+'</div><div class="debt-text"><div class="debt-desc">'+esc(d.desc)+'</div><div class="debt-meta"><span>'+fmt(d.amount)+'</span><span class="debt-dir-tag '+(d.dir==="give"?"tag-give":"tag-receive")+'">'+(d.dir==="give"?"devo dare":"mi deve")+'</span></div>'+(d.date?'<div class="debt-date">'+fmtDate(d.date)+'</div>':"")+'</div><div class="debt-actions"><button class="debt-action-btn" onclick="startEdit('+di+')">✏️</button><button class="debt-action-btn" onclick="window._delDebt('+di+')">✕</button></div></div>';
-      }).join("");
+      }).join("")+(showHistory && paidDebts.length ? '<div style="padding:10px 24px;text-align:center"><span style="font-size:13px;color:var(--text3);cursor:pointer;text-decoration:underline" onclick="toggleHistory()">Nascondi pagati</span></div>' : (!showHistory && paidDebts.length ? '<div style="padding:10px 24px;text-align:center"><span style="font-size:13px;color:var(--text3);cursor:pointer;text-decoration:underline" onclick="toggleHistory()">Mostra pagati ('+paidDebts.length+')</span></div>' : ''));
     }
   }
 
