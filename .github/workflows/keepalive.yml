@@ -1,0 +1,23 @@
+name: Supabase Keepalive
+ 
+on:
+  schedule:
+    - cron: '0 8 */3 * *'  # ogni 3 giorni alle 8:00 UTC
+  workflow_dispatch:        # avvio manuale
+ 
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://owplxbkptrdmcwziinhg.supabase.co/rest/v1/debiti?limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93cGx4YmtwdHJkbWN3emlpbmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNTMsImV4cCI6MjA5MTI5NzA1M30.SGI5gk-vZlUuqb9zYyZun4RojD8Dg4axrmBZQzD-tQU" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93cGx4YmtwdHJkbWN3emlpbmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNTMsImV4cCI6MjA5MTI5NzA1M30.SGI5gk-vZlUuqb9zYyZun4RojD8Dg4axrmBZQzD-tQU")
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Ping fallito con status $STATUS"
+            exit 1
+          fi
+          echo "✅ Supabase risponde correttamente"
