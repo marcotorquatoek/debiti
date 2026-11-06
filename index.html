@@ -28,6 +28,17 @@ body.panel-open{overflow:hidden}
 .hero-label{font-size:14px;color:var(--text2);margin-bottom:4px}
 .hero-amount{font-size:52px;font-weight:800;letter-spacing:-2px;color:var(--text);line-height:1}
 .hero-amount .euro{font-size:28px;font-weight:800;vertical-align:super;margin-right:3px}
+.hero-sub{font-size:12px;color:var(--text3);margin-top:8px}
+.person-row.excluded .person-amount{opacity:.4;text-decoration:line-through}
+.person-row.excluded .person-avatar{opacity:.6}
+.person-row.archived{opacity:.6}
+.badge-excl{background:var(--bg3);color:var(--text3)}
+.badge-arch{background:var(--bg3);color:var(--text3)}
+.archive-toggle{padding:18px 24px 10px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.6px}
+.panel-actions{display:flex;gap:8px;padding:14px 24px 4px;border-top:1px solid var(--border)}
+.panel-action-btn{flex:1;background:var(--bg3);border:none;border-radius:12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:12px 6px;cursor:pointer}
+.panel-action-btn:active{opacity:.7}
+.panel-action-btn.on{background:rgba(255,159,10,.18);color:#ff9f0a}
 .section-title{padding:0 24px 14px}
 .section-title h2{font-size:17px;font-weight:600;color:var(--text)}
 .person-row{display:flex;align-items:center;gap:14px;padding:14px 24px;cursor:pointer;transition:background .1s}
@@ -133,7 +144,7 @@ body.panel-open{overflow:hidden}
 <div class="header">
   <div class="header-left">Saldo <span class="sync-dot" id="sync-dot"></span></div>
   <div class="header-right">
-    <span class="version-badge">v22</span>
+    <span class="version-badge">v23</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="avatar-btn" onclick="openNameModal()" style="cursor:pointer" id="avatar-btn">M</div>
   </div>
@@ -141,6 +152,7 @@ body.panel-open{overflow:hidden}
 <div class="hero">
   <div class="hero-label">Mi devono dare</div>
   <div class="hero-amount"><span class="euro">€</span><span id="hero-num">0,00</span></div>
+  <div class="hero-sub" id="hero-sub"></div>
 </div>
 <div class="section-title"><h2>Persone</h2></div>
 <div id="list"><div class="loading">Connessione...</div></div>
@@ -190,6 +202,10 @@ body.panel-open{overflow:hidden}
       <span>Mi devono: <strong id="sum-receive" style="color:var(--green)"></strong></span>
       <span>Devo: <strong id="sum-give" style="color:var(--red)"></strong></span>
       <span>Netto: <strong id="sum-net"></strong></span>
+    </div>
+    <div class="panel-actions">
+      <button class="panel-action-btn" id="btn-excl" onclick="toggleExclude()"></button>
+      <button class="panel-action-btn" id="btn-arch" onclick="toggleArchive()"></button>
     </div>
     <div class="del-person-row"><button class="del-person-btn" id="del-person-btn">Elimina persona</button></div>
   </div>
@@ -309,20 +325,38 @@ supaLoad().then(val=>{
   console.error("Supabase load error:", error);
 });
 
+let showArchived=false;
+function personRowHTML(p,pi,net){
+  const init=p.name.slice(0,2).toUpperCase();
+  const unpaid=(p.debts||[]).filter(d=>!d.paid).length;
+  const voci=unpaid===1?"1 voce aperta":unpaid+" voci aperte";
+  const amtClass=net===0?"zero":net>0?"receive":"give";
+  let badge=net===0?"":net>0?'<span class="person-badge badge-receive">deve a me</span>':'<span class="person-badge badge-give">gli devo</span>';
+  if(p.excluded&&!p.archived)badge+=' <span class="person-badge badge-excl">escluso dal totale</span>';
+  const cls="person-row"+(p.excluded?" excluded":"")+(p.archived?" archived":"");
+  return '<div class="'+cls+'" onclick="window._openPanel('+pi+')"><div class="person-avatar" style="background:'+p.color+'">'+init+'</div><div class="person-info"><div class="person-name-row">'+esc(p.name)+' '+badge+'</div><div class="person-sub">'+voci+'</div></div><div class="person-amount '+amtClass+'">'+fmt(Math.abs(net))+'</div><span class="chevron-r">›</span></div><div class="divider"></div>';
+}
+window.toggleArchivedList=function(){showArchived=!showArchived;renderList();};
 function renderList(){
   const list=document.getElementById("list");
-  if(!D.persons.length){list.innerHTML='<div class="empty-msg">Nessuna persona ancora.<br>Tocca <strong>+</strong> per aggiungerne una.</div>';document.getElementById("hero-num").textContent="0,00";return;}
-  let totalNet=0;
-  list.innerHTML=D.persons.map((p,pi)=>{
-    const{net}=calcPerson(p);totalNet+=net;
-    const init=p.name.slice(0,2).toUpperCase();
-    const unpaid=(p.debts||[]).filter(d=>!d.paid).length;
-    const voci=unpaid===1?"1 voce aperta":unpaid+" voci aperte";
-    const amtClass=net===0?"zero":net>0?"receive":"give";
-    const badge=net===0?"":net>0?'<span class="person-badge badge-receive">deve a me</span>':'<span class="person-badge badge-give">gli devo</span>';
-    return '<div class="person-row" onclick="window._openPanel('+pi+')"><div class="person-avatar" style="background:'+p.color+'">'+init+'</div><div class="person-info"><div class="person-name-row">'+esc(p.name)+' '+badge+'</div><div class="person-sub">'+voci+'</div></div><div class="person-amount '+amtClass+'">'+fmt(Math.abs(net))+'</div><span class="chevron-r">›</span></div><div class="divider"></div>';
-  }).join("");
+  const heroSub=document.getElementById("hero-sub");
+  if(!D.persons.length){list.innerHTML='<div class="empty-msg">Nessuna persona ancora.<br>Tocca <strong>+</strong> per aggiungerne una.</div>';document.getElementById("hero-num").textContent="0,00";heroSub.textContent="";return;}
+  let totalNet=0,nExcl=0,nArch=0,activeHTML="",archHTML="";
+  D.persons.forEach(function(p,pi){
+    const net=calcPerson(p).net;
+    if(p.archived){nArch++;archHTML+=personRowHTML(p,pi,net);return;}
+    if(p.excluded)nExcl++;else totalNet+=net;
+    activeHTML+=personRowHTML(p,pi,net);
+  });
+  if(!activeHTML)activeHTML='<div class="empty-msg">Nessuna persona attiva.</div>';
+  let html=activeHTML;
+  if(nArch){
+    html+='<div class="archive-toggle" onclick="toggleArchivedList()"><span>Archiviate ('+nArch+')</span><span>'+(showArchived?"▴":"▾")+'</span></div>';
+    if(showArchived)html+=archHTML;
+  }
+  list.innerHTML=html;
   document.getElementById("hero-num").textContent=fmtN(Math.abs(totalNet));
+  heroSub.textContent=nExcl?(nExcl===1?"1 persona esclusa dal totale":nExcl+" persone escluse dal totale"):"";
 }
 
 function openPanel(pi){
@@ -368,6 +402,10 @@ function renderPanel(){
   document.getElementById("panel-avatar").style.background=p.color;
   document.getElementById("panel-avatar").textContent=p.name.slice(0,2).toUpperCase();
   document.getElementById("panel-name").textContent=p.name;
+  const be=document.getElementById("btn-excl"),ba=document.getElementById("btn-arch");
+  be.textContent=p.excluded?"✓ Escluso dal totale":"Escludi dal totale";
+  be.className="panel-action-btn"+(p.excluded?" on":"");
+  ba.textContent=p.archived?"Ripristina":"📦 Archivia";
   const dirEl=document.getElementById("panel-direction");
   if(net>0){dirEl.textContent="Mi deve dare";dirEl.className="panel-direction receive";}
   else if(net<0){dirEl.textContent="Gli devo dare";dirEl.className="panel-direction give";}
@@ -464,6 +502,20 @@ function renderPanel(){
   }).join("");
   document.getElementById("ded-section").style.display=p.showDed?"block":"none";
 }
+
+window.toggleExclude=function(){
+  if(activePi<0)return;
+  const p=D.persons[activePi];
+  p.excluded=!p.excluded;
+  saveAll();renderPanel();renderList();
+};
+window.toggleArchive=function(){
+  if(activePi<0)return;
+  const p=D.persons[activePi];
+  p.archived=!p.archived;
+  saveAll();renderList();
+  if(p.archived)closePanel();else renderPanel();
+};
 
 // Debt actions
 function getResiduo(d){var tot=(d.acconti||[]).reduce(function(s,a){return s+a;},0);return Math.max(0,d.amount-tot);}
